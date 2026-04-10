@@ -1,0 +1,627 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=League+Gothic&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    background: rgba(0, 0, 0, 0); /* Transparência total */
+}
+
+/* 2. O trilho (Track) - Onde a barra desliza */
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0); /* Transparência total */
+    /* Se quiser que ele não ocupe espaço visual, não adicione bordas aqui */
+}
+
+/* 3. O "Thumb" (A parte que você arrasta) */
+::-webkit-scrollbar-thumb {
+    background-color: #333; /* Cor sólida para o usuário enxergar */
+    border-radius: 10px;
+    /* Dica: use uma borda transparente para criar um "respiro" */
+    border: 2px solid rgba(0, 0, 0, 0); 
+    background-clip: padding-box;
+    cursor: pointer;
+}
+
+/* Global body styling isolated to this page */
+body {
+    background-color:#000;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-y: overlay;
+}
+
+.container{
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+
+.menu{
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 4;
+}
+
+.logo{
+    width: 200px;
+    height: 100px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-left: 70px;
+    z-index: 4;
+}
+
+.logo a{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-decoration: none;
+}
+
+
+.logo img{
+    width: 120px;
+    height: 120px;
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+.logo h1{
+    color: #F4EDE6;
+    font-weight: 400;
+    font-family: 'Cinzel', serif;
+    font-size: 35px;
+}
+
+.logo p{
+    color: #F4EDE6;
+    margin-left: 15px;
+    text-transform: uppercase;
+    font-size: 30px;
+    font-family: "Cinzel", serif;
+}
+
+.infos{
+    width: 50%;
+    margin-right: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+
+.lista{
+    color: #F4EDE6;
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    margin-right: 30px;
+    margin-top: 10px;
+}
+
+
+.lista li{
+font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    text-transform: uppercase;
+    position: relative;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.lista li a{
+    text-decoration: none;
+    color: #F4EDE6;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    text-transform: uppercase;
+    position: relative;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.lista li::after{
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: #F4EDE6;
+    transition: width 0.5s ease;
+}
+
+.lista li:hover::after{
+    width: 100%;
+}
+
+.language {
+    position: absolute;
+    top: 100%;
+    left: 30%;
+    transform: translateX(-50%);
+    background-color: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(8px); 
+    padding: 15px;
+    border-radius: 10px;
+    min-width: 100px;
+    z-index: 4;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s, transform 0.4s ease;
+    border: 1px solid rgba(158, 157, 157, 0.3);
+}
+
+@media (max-width: 768px) {
+    .language {
+        backdrop-filter: none;
+        background-color: rgba(20, 20, 20, 0.95);
+    }
+}
+
+/* QUANDO ESTIVER NO HOVER (Aparecer) */
+.linguas:hover .language {
+    display: block; 
+    opacity: 1;
+    visibility: visible;
+    animation: topToFall 0.5s ease-out forwards;
+}
+
+.linguas .language {
+    animation: fallToTop 0.4s ease-in forwards;
+}
+
+.language p{
+    transition: color 0.5s ease;
+    position: relative;
+}
+
+.language p:hover {
+    color: #e6e7e49c; 
+}
+
+.secao1 {
+    position: relative;
+    width: 100%;
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    background-color: black;
+}
+
+.secao1 video {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* Fica entre o vídeo e o texto */
+    background: rgba(0, 0, 0, 0.514); 
+    pointer-events: none; 
+    z-index: 1;
+}
+
+
+.secao1 h1 {
+    margin-left: 50px;
+    font-size: 5rem;
+    font-family: "Inter", sans-serif;
+    color: #F4EDE6;
+    text-shadow: 0 0 15px rgba(244, 237, 230, 0.8); /* Seu efeito de brilho */
+    z-index: 2;
+}
+
+.secao1 h1{
+    margin-left: 50px;
+    width: 100%;
+    height: 150px;
+    font-weight: 500;
+    font-family: "Inter", sans-serif;
+    font-size: 5rem;
+    color: #F4EDE6;
+    letter-spacing: 4px;
+    position: relative;
+    top: 20%;
+text-shadow: 0 0 10px rgba(244, 237, 230, 0.8);
+}
+
+
+
+.secao1 video::after {
+    content: "";
+    position: absolute;
+    bottom: 10%;
+    left: 0;
+    height: 3px;
+    filter: blur(1px);
+    background: linear-gradient(90deg, transparent, #F4EDE6 50%, transparent);
+    box-shadow: 0 0 18px rgba(244, 237, 230, 0.8);
+    animation: toLeft 1s forwards;
+    z-index: 2;
+}
+
+@keyframes toLeft{
+    from{
+        width: 0%;
+    }
+    to{
+        width: 100%;
+    }
+}
+
+.secao2 {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; 
+    align-items: center;
+    gap: 20px;             
+    padding: 40px;           
+    background-color: #000; 
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+}
+
+
+.secao2 .left2, 
+.secao2 .right2, 
+.secao2 .down {
+    background-color: #0c0c0c;
+    border-radius: 20px;
+    padding: 30px;           
+    box-sizing: border-box;
+    color: rgb(244, 237, 230);           
+    font-family: sans-serif;
+    position: relative;
+    z-index: 1; /* cria stacking context fixo — impede que transform no hover reordene o ::before */
+}
+
+.secao2 .left2, 
+.secao2 .right2 {
+    flex: 1;                
+    min-width: 300px;        
+    height: 300px;  
+    display: flex;
+    z-index: 1;
+}
+
+
+/* Garante que o conteúdo fique sempre acima do ::before */
+.secao2 h2,
+.secao2 .contact-infos {
+    position: relative;
+    z-index: 1;
+}
+
+    /* ── Magic Bento border glow ── */
+    :root {
+      --border-color: #aba5b5;
+      --background-dark: #3d3a41;
+      --purple-glow: #f4ede61f;
+    }
+
+    .magic-bento-card {
+      --glow-x: 50%;
+      --glow-y: 50%;
+      --glow-intensity: 0;
+      --glow-radius: 200px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .magic-bento-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      padding: 4px;
+      background: radial-gradient(
+        var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+        rgba(244, 237, 230, calc(var(--glow-intensity) * 0.9)) 0%,
+        rgba(244, 237, 230, calc(var(--glow-intensity) * 0.4)) 35%,
+        transparent 65%
+      );
+      border-radius: inherit;
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 1;
+      transition: opacity 0.3s ease;
+    }
+
+
+    .magic-bento-card:hover {
+        transform: translateY(-3px);
+      box-shadow: 0 4px 20px rgba(189, 179, 202, 0.5), 0 0 35px var(--purple-glow);
+    }
+
+    #global-spotlight {
+      position: fixed;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle,
+        rgba(94, 92, 95, 0.15) 0%,
+        rgba(97, 97, 98, 0.07) 20%,
+        rgba(122, 121, 123, 0.03) 40%,
+        transparent 65%
+      );
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: screen;
+      transition: opacity 0.3s ease;
+      will-change: transform, opacity;
+    }
+
+    .mb-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #b9b5c2;
+      box-shadow: 0 0 6px #a4a0a7b3;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+
+@keyframes borderLaserFlow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+
+.secao2 .down {
+    flex-basis: 100%;        
+    height: 300px;           
+}
+
+.secao2 h2 {
+    margin-top: 0;
+    font-size: 1.8rem;
+    font-weight: 300;
+}
+
+
+.left2 .contact-infos{
+    width: auto;
+    height: auto;
+    position: absolute;
+    top: 30%;
+}
+.right2 .contact-infos{
+    width: auto;
+    height: auto;
+    position: absolute;
+    top: 30%;
+}
+.down .contact-infos{
+    width: auto;
+    height: auto;
+    position: absolute;
+    top: 30%;
+}
+
+.contact-infos p{
+    padding: 5px;
+    color: #797878;
+    cursor: pointer;
+    transition: 0.6s ease;
+}
+
+
+
+.contact-infos p:hover{
+    color: #F4EDE6;
+}
+
+.secao2 .down .contact-infos{
+    bottom: 20%;
+}
+
+footer{
+    width: 100%;
+    height: 600px;
+    position: relative;
+    margin-top: 10%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+footer video{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    bottom: 0;
+    opacity: 0.7;
+}
+
+footer p{
+    z-index: 2;
+    color: #F4EDE6;
+    position: absolute;
+    bottom: 4%;
+}
+footer h1{
+    position: absolute;
+    bottom: 8%;
+    font-size: 12rem;
+    color: #F4EDE6;
+    font-weight: 300;
+    font-family: "Montserrat", sans-serif;
+}
+
+footer::after{
+    content: "";
+    left: 0;
+    top: 0;
+    position: absolute;
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(to bottom, black 0%, transparent 90%);
+}
+
+.hamburger {
+    display: none;
+}
+
+@media screen and (max-width: 970px) {
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        width: 30px;
+        height: 25px;
+        cursor: pointer;
+        z-index: 10;
+        margin-right: 30px;
+        margin-top: 25px;
+    }
+
+    .hamburger span {
+        width: 100%;
+        height: 3px;
+        background-color: #F4EDE6;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+    }
+
+    .hamburger.active span:nth-child(1) {
+        transform: translateY(11px) rotate(45deg);
+    }
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .hamburger.active span:nth-child(3) {
+        transform: translateY(-11px) rotate(-45deg);
+    }
+
+    .infos {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 250px;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.75);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: right 0.4s ease;
+        margin-right: 0;
+        z-index: 5;
+    }
+
+    .infos.active {
+        right: 0;
+    }
+
+    .lista {
+        flex-direction: column;
+        gap: 30px;
+        margin-right: 0;
+        margin-top: 0;
+        align-items: center;
+    }
+
+    .language {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .secao1 video {
+        height: 100vh;
+        width: auto;
+        min-width: 100%;
+    }
+
+    .secao1 h1 {
+        font-size: 3rem;
+        margin-left: 20px;
+        position: relative;
+        top: 0;
+        margin-top: 0;
+    }
+
+    .logo h1 {
+        font-size: 25px;
+    }
+    .logo p {
+        font-size: 20px;
+    }
+    .logo {
+        margin-left: 20px;
+    }
+}
+
+@media screen and (max-width: 700px){
+    .secao2 {
+        padding: 20px;
+        margin-top: 0;
+    }
+    .secao2 .left, .secao2 .right, .secao2 .down {
+        min-width: 100%;
+        height: 300px;
+    }
+    .contact-infos {
+        position: relative;
+        bottom: auto;
+        margin-top: 20px;
+    }
+    .secao2 .right::before {
+        display: none;
+    }
+    .secao2 .left::before {
+        display: none;
+    }
+
+    footer h1{
+        font-size: 3rem;
+        bottom: 12%;
+    }
+}

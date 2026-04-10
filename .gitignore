@@ -1,0 +1,21 @@
+# ── Dependências ─────────────────────────────────────────
+node_modules/
+
+# ── Build ─────────────────────────────────────────────────
+dist/
+
+# ── Ambiente (NUNCA suba isso) ────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Arquivos do editor ────────────────────────────────────
+.vscode/
+*.local
+.DS_Store
+Thumbs.db
+
+# ── GLB grandes que não precisam de versão ────────────────
+sla.glb
+walking.glb
+personagem-otimizado.glb

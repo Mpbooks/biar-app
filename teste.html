@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/meshoptimizer/meshopt_decoder.js"></script>
+</head>
+<body style="margin: 0; background: #111;">
+  <canvas id="canvas" style="display: block; width: 100%; height: 100vh;"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(2, 4, 3);
+    scene.add(dirLight);
+
+    let headBone = null;
+    let mixer = null;
+    const clock = new THREE.Clock();
+
+    const loader = new THREE.GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+
+    loader.load('walking.glb', (gltf) => {
+      const model = gltf.scene;
+      scene.add(model);
+
+      // enquadra o modelo automaticamente
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+
+      model.position.sub(center);
+      model.position.y += size.y / 2;
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      camera.position.set(0, size.y / 2, maxDim * 2);
+      camera.lookAt(0, size.y / 2, 0);
+
+      // inicia a animação
+      if (gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+      }
+
+      // acha o bone da cabeça (só o principal, ignora o HeadTop_End)
+      model.traverse((obj) => {
+        if (obj.isBone && obj.name === 'mixamorigHead_1') {
+          headBone = obj;
+          console.log('Bone encontrado:', obj.name);
+        }
+      });
+    });
+
+    const targetRot = { x: 0, y: 0 };
+    const currentRot = { x: 0, y: 0 };
+
+    window.addEventListener('mousemove', (e) => {
+      const mx = (e.clientX / window.innerWidth) * 2 - 1;
+      const my = -((e.clientY / window.innerHeight) * 2 - 1);
+      targetRot.y = mx * 0.5;
+      targetRot.x = my * 0.3;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+      // animação roda primeiro
+      if (mixer) mixer.update(delta);
+
+      // soma a rotação do mouse por cima da animação
+      currentRot.x += (targetRot.x - currentRot.x) * 0.1;
+      currentRot.y += (targetRot.y - currentRot.y) * 0.1;
+
+      if (headBone) {
+        headBone.rotation.x += currentRot.x;
+        headBone.rotation.y += currentRot.y;
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

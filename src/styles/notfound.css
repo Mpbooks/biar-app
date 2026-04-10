@@ -1,0 +1,38 @@
+/* src/styles/notfound.css */
+.notfound-page { width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center; background: #050608; color: #fff; font-family: 'Montserrat', sans-serif; position: relative; overflow: hidden; }
+.notfound-page .light-pillar-container { opacity: 0.7; z-index: 1; }
+
+.ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; justify-content: center; align-items: center; }
+.interactive { pointer-events: auto; }
+
+header { position: absolute; top: 0; left: 0; width: 100%; padding: 40px; display: flex; justify-content: space-between; align-items: flex-start; box-sizing: border-box; }
+.logo-container { text-align: center; cursor: pointer; margin-top: -10px; }
+.logo-container h2 { margin: 0; font-family: 'Cinzel', serif; font-size: 26px; letter-spacing: 4px; font-weight: 500; }
+.logo-container p { margin: 0; font-size: 8px; letter-spacing: 3px; color: #8e8d8c; }
+
+.side-nav { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: 2px; color: #8e8d8c; cursor: pointer; transition: color 0.3s; }
+.side-nav.left-nav { left: 40px; }
+.side-nav.right-nav { right: 40px; }
+.side-nav .line { width: 40px; height: 1px; background: #8e8d8c; transition: width 0.3s, background 0.3s; }
+.side-nav:hover .line { width: 60px; background: #fff; }
+.side-nav:hover { color: #fff; }
+
+.bottom-icons { position: absolute; bottom: 40px; left: 40px; display: flex; gap: 20px; }
+.bottom-icons svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; cursor: pointer; }
+
+.content { display: flex; flex-direction: column; align-items: center; position: relative; margin-top: -20px; }
+
+.back-home-btn { border: 1px solid rgba(255,255,255,0.7); padding: 12px 40px; color: #fff; text-decoration: none; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; font-weight: 500; display: inline-block; margin-bottom: -40px; position: relative; z-index: 5; transition: 0.3s; backdrop-filter: blur(5px); background: rgba(0,0,0,0.2); }
+.back-home-btn:hover { background: #fff; color: #000; }
+
+.huge-404 { display: flex; align-items: center; position: relative; }
+.huge-404 h1 { font-family: 'League Gothic', sans-serif; font-size: 26rem; margin: 0; line-height: 1; font-weight: 400; color: #fff; text-shadow: 0 10px 30px rgba(0,0,0,0.8); letter-spacing: -15px; }
+.vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 14px; letter-spacing: 4px; color: #8e8d8c; text-transform: uppercase; position: absolute; right: -25px; top: 60%; margin-top: 20px; }
+
+@media screen and (max-width: 900px) {
+  .huge-404 h1 { font-size: 14rem; letter-spacing: -5px; }
+  .side-nav { display: none; }
+  header { padding: 20px; }
+  .bottom-icons { bottom: 20px; }
+  .vertical-text { right: -15px; font-size: 11px; }
+}
