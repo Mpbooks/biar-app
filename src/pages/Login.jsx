@@ -441,7 +441,7 @@ export default function Login() {
 
         <div style={{ width: '100%', height: '100%', position:'absolute', zIndex:1, opacity:0.9, }}>
   <GridDistortion
-    imageSrc="../../public/images/wallpaper.png"
+    imageSrc="/images/wallpaper.png"
     grid={10}
     mouse={0.1}
     strength={0.15}
