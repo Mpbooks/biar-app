@@ -79,7 +79,7 @@ passport.use(new GoogleStrategy({
         { sub: user._id.toString(), username: user.username, email: user.email },
         JWT_SECRET, { expiresIn: '7d' }
       )
-      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email } })
+      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt } })
     }
     return done(null, { existing: false, email, googleId, name })
   } catch (e) { return done(e) }
@@ -114,7 +114,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
 
     const { insertedId } = await col.insertOne({ username, email, googleId, passwordHash: null, createdAt: new Date() })
     const token = jwt.sign({ sub: insertedId.toString(), username, email }, JWT_SECRET, { expiresIn: '7d' })
-    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email } })
+    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date() } })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
     console.error(e)
@@ -138,7 +138,7 @@ app.post('/api/auth/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10)
     const { insertedId } = await col.insertOne({ username, email, passwordHash, createdAt: new Date() })
     const token = jwt.sign({ sub: insertedId.toString(), username, email }, JWT_SECRET, { expiresIn: '7d' })
-    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email } })
+    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date() } })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
     console.error(e)
@@ -163,6 +163,7 @@ app.post('/api/auth/login', async (req, res) => {
     else                    user = await col.findOne({ username })
 
     if (!user) return res.status(401).json({ error: 'invalid_credentials' })
+    if (!user.passwordHash) return res.status(401).json({ error: 'invalid_credentials' })
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok)  return res.status(401).json({ error: 'invalid_credentials' })
 
@@ -170,7 +171,7 @@ app.post('/api/auth/login', async (req, res) => {
       { sub: user._id.toString(), username: user.username, email: user.email },
       JWT_SECRET, { expiresIn: '7d' }
     )
-    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email } })
+    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date() } })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })

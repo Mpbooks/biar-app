@@ -65,7 +65,7 @@ passport.use(new GoogleStrategy({
         JWT_SECRET,
         { expiresIn: '7d' }
       )
-      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email } })
+      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt } })
     }
 
     return done(null, { existing: false, email, googleId, name })
@@ -126,7 +126,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
 
     return res.status(201).json({
       token,
-      user: { id: insertedId.toString(), username, email },
+      user: { id: insertedId.toString(), username, email, createdAt: now },
     })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
@@ -167,7 +167,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     return res.status(201).json({
       token,
-      user: { id: insertedId.toString(), username, email },
+      user: { id: insertedId.toString(), username, email, createdAt: now },
     })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
@@ -196,6 +196,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     if (!user) return res.status(401).json({ error: 'invalid_credentials' })
+    if (!user.passwordHash) return res.status(401).json({ error: 'invalid_credentials' })
 
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) return res.status(401).json({ error: 'invalid_credentials' })
@@ -208,11 +209,11 @@ app.post('/api/auth/login', async (req, res) => {
 
     return res.json({
       token,
-      user: { id: user._id.toString(), username: user.username, email: user.email },
+      user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date() },
     })
   } catch (e) {
     console.error(e)
-    return res.status(500).json({ error: 'server_error' })
+    return res.status(500).json({ error: 'server_error', message: e.message })
   }
 })
 

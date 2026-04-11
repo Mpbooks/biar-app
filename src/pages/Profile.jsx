@@ -201,10 +201,29 @@ function MapCard() {
 export default function Profile() {
   const [activeNav, setActiveNav] = useState('Dashboard')
   const [tasks, setTasks] = useState(TASKS)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('biar_user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+  }, [])
 
   const toggleTask = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t))
   }
+
+  const formatMemberSince = (dateString) => {
+    if (!dateString) return 'Mar 2022'
+    const d = new Date(dateString)
+    const m = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+    const y = d.getFullYear()
+    return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + y
+  }
+
+  const displayName = user?.username || 'Usuário'
+  const memberSince = formatMemberSince(user?.createdAt)
 
   return (
     <div className="prf-root">
@@ -258,7 +277,7 @@ export default function Profile() {
               <span className="prf-welcome-line"></span>
               Bem-vindo de volta
             </div>
-            <h1 className="prf-welcome-h1">Maria Silva</h1>
+            <h1 className="prf-welcome-h1">{displayName}</h1>
             <div className="prf-tags-row">
               <span className="prf-tag">Investidor Ativo</span>
               <span className="prf-tag prf-tag--accent">Alto Potencial</span>
@@ -297,7 +316,7 @@ export default function Profile() {
                 <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=88&h=88&fit=crop" alt="Profile" className="prf-avatar-img" />
                 <div className="prf-status-dot"></div>
               </div>
-              <h2 className="prf-profile-name">Maria Silva</h2>
+              <h2 className="prf-profile-name">{displayName}</h2>
               <p className="prf-profile-role">Investidora Institucional</p>
               <div className="prf-profile-info">
                 <div className="prf-profile-info-row">
@@ -306,7 +325,7 @@ export default function Profile() {
                 </div>
                 <div className="prf-profile-info-row">
                   <span>Membro desde:</span>
-                  <strong>Mar 2022</strong>
+                  <strong>{memberSince}</strong>
                 </div>
                 <div className="prf-profile-info-row">
                   <span>Verificação:</span>
