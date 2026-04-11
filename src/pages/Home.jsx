@@ -39,9 +39,8 @@ export default function Home() {
 
     const fetchPrice = async () => {
       try {
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${currency}`
-        )
+        const baseUrl = import.meta.env.VITE_API_URL || ''
+        const res = await fetch(`${baseUrl}/api/price/bitcoin/${currency}`)
         if (!res.ok) throw new Error('API limit')
         const data = await res.json()
         const price = data.bitcoin[currency]

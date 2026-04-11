@@ -216,6 +216,20 @@ app.post('/api/auth/login', async (req, res) => {
   }
 })
 
+// ── Proxy CoinGecko ────────────────────────────────────────
+app.get('/api/price/bitcoin/:currency', async (req, res) => {
+  try {
+    const currency = req.params.currency || 'usd'
+    const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=${currency}`)
+    if (!response.ok) throw new Error('API limit')
+    const data = await response.json()
+    return res.json(data)
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'failed to fetch price' })
+  }
+})
+
 // ── Inicialização ──────────────────────────────────────────────────────────────
 async function start() {
   await client.connect()
