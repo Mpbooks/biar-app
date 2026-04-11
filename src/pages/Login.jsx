@@ -439,7 +439,7 @@ export default function Login() {
 
       <div className="login-split">
 
-        <div style={{ width: '100%', height: '100%', position:'absolute', zIndex:1, opacity:0.9, }}>
+        <div style={{ width: '100%', height: '100%', position:'absolute', zIndex:1, opacity:1, }}>
   <GridDistortion
     imageSrc="/images/wallpaper.png"
     grid={10}

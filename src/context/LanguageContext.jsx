@@ -18,7 +18,7 @@ const translations = {
     about_p2_name: 'Enzo Marinelli', about_p2_desc: 'Analista estratégico e parceiro.',
     about_p3_name: 'Leandro do Amaral', about_p3_desc: 'Estrategista financeiro.',
     about_p4_name: 'Caroline Xavier', about_p4_desc: 'Diretora de operações.',
-    about_p5_name: 'Geovanna Pereira', about_p5_desc: 'Diretora de operações.',
+    about_p5_name: 'Geovanna Pereira', about_p5_desc: 'Se não pode fazer tudo, faça tudo que puder.',
     about_p6_name: 'Rebeca Medeiros', about_p6_desc: 'Diretora de operações.',
     about_p7_name: 'Manuella Jacomo', about_p7_desc: 'Diretora de operações.',
     about_p8_name: 'Gustavo Barbosa', about_p8_desc: 'Diretora de operações.',

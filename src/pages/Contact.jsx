@@ -65,7 +65,7 @@ export default function Contact() {
     const cards = Array.from(section.querySelectorAll('.magic-bento-card'))
     if (!cards.length) return
 
-    const PARTICLE_COUNT = window.innerWidth < 768 ? 6 : 12
+    const PARTICLE_COUNT = window.innerWidth < 768 ? 8 : 12
     const SPOTLIGHT_RADIUS = 400
     let mouseX = 0, mouseY = 0, spotX = 0, spotY = 0, ticking = false
 
@@ -76,15 +76,15 @@ export default function Contact() {
       el.style.left = Math.random() * width + 'px'
       el.style.top = Math.random() * height + 'px'
       card.appendChild(el)
-      const tx = (Math.random() - 0.5) * 90
-      const ty = (Math.random() - 0.5) * 90
+      const tx = (Math.random() - 0.5) * 100
+      const ty = (Math.random() - 0.5) * 100
       const dur = 1800 + Math.random() * 1800
       el.animate(
         [
           { transform: 'scale(0)', opacity: 0 },
           { transform: 'scale(1)', opacity: 0.9, offset: 0.15 },
-          { transform: `translate(${tx}px,${ty}px) scale(0.8)`, opacity: 0.4, offset: 0.7 },
-          { transform: `translate(${tx * 1.3}px,${ty * 1.3}px) scale(0)`, opacity: 0 }
+          { transform: `translate(${tx}px,${ty}px) scale(0.7)`, opacity: 0.5, offset: 0.7 },
+          { transform: `translate(${tx * 1.2}px,${ty * 1.2}px) scale(0)`, opacity: 0 }
         ],
         { duration: dur, easing: 'ease-out', fill: 'forwards' }
       ).finished.then(() => el.remove())
@@ -98,7 +98,6 @@ export default function Contact() {
         spotlight.style.top = spotY + 'px'
       }
 
-      // Check if mouse is inside the cards section
       const sectionRect = section.getBoundingClientRect()
       const insideSection =
         mouseX >= sectionRect.left && mouseX <= sectionRect.right &&
@@ -190,7 +189,6 @@ export default function Contact() {
     <div className="contact-page">
       <div id="global-spotlight" ref={spotlightRef}></div>
 
-      {/* Wrapper da página — usa contact-inner em vez de .container para evitar conflito com o CSS global */}
       <div className="container1">
         <Navbar />
 
@@ -206,33 +204,32 @@ export default function Contact() {
           </section>
         </div>
 
-        {/* Seção 2 — cards bento */}
+        {/* Seção 2 — cards */}
         <section
           className="secao2"
           id="secao2-section"
           style={{ backgroundColor: 'transparent', position: 'relative', top: 0 }}
         >
           <div className="left2 magic-bento-card">
-              <h2>BIAR</h2>
-              <div className="contact-infos">
-                <p>Ulica grada Vukovara 23</p>
-                <p>10000 Zagreb, Croatia</p>
-                <p>+385 (1) 63 87 451</p>
-                <p>info@bosqar.com</p>
-              </div>
-           
+            <h2>BIAR</h2>
+            <div className="contact-infos">
+              <p>Ulica grada Vukovara 23</p>
+              <p>10000 Zagreb, Croatia</p>
+              <p>+385 (1) 63 87 451</p>
+              <p>info@bosqar.com</p>
+            </div>
           </div>
 
           <div className="right2 magic-bento-card">
-              <h2>{t('contact_card2_title')}</h2>
-              <div className="contact-infos">
-                <p>{t('contact_card2_press')}</p>
-                <p>press@bosqar.com</p>
-                <p>Robin-Ivan Capar</p>
-                <p>+47 412 06 576</p>
-                <p>Nikolina Antolić</p>
-                <p>+47 412 06 576</p>
-              </div>
+            <h2>{t('contact_card2_title')}</h2>
+            <div className="contact-infos">
+              <p>{t('contact_card2_press')}</p>
+              <p>press@bosqar.com</p>
+              <p>Robin-Ivan Capar</p>
+              <p>+47 412 06 576</p>
+              <p>Nikolina Antolić</p>
+              <p>+47 412 06 576</p>
+            </div>
           </div>
 
           <div className="down magic-bento-card">
@@ -248,8 +245,8 @@ export default function Contact() {
         {/* Footer */}
         <footer>
           <video src="/images/sla_web.mp4" autoPlay muted loop playsInline />
-          <p>{t('footer_rights')}</p>
           <h1>Biar Invest</h1>
+          <p>{t('footer_rights')}</p>
         </footer>
       </div>
     </div>
