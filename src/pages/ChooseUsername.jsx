@@ -6,6 +6,7 @@ export default function ChooseUsername() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [focused, setFocused] = useState(false)
@@ -136,6 +137,7 @@ export default function ChooseUsername() {
     if (!u) { setMessage('escolha um nome de usuário'); return }
     if (u.length < 3) { setMessage('mínimo 3 caracteres'); return }
     if (!/^[a-zA-Z0-9_]+$/.test(u)) { setMessage('apenas letras, números e _'); return }
+    if (password.length < 6) { setMessage('senha deve ter no mínimo 6 caracteres'); return }
 
     setLoading(true)
     setMessage('')
@@ -143,7 +145,7 @@ export default function ChooseUsername() {
       const r = await fetch('/api/auth/google/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: u, email, googleId }),
+        body: JSON.stringify({ username: u, email, googleId, password }),
       })
       const data = await r.json()
       if (!r.ok) {
@@ -299,7 +301,7 @@ export default function ChooseUsername() {
           font-size: 10px;
           color: #4b5563;
           letter-spacing: 0.05em;
-          margin-bottom: 32px;
+          margin-bottom: 16px;
           padding-left: 4px;
         }
 
@@ -450,6 +452,18 @@ export default function ChooseUsername() {
                   />
                 </div>
                 <p className="cu-hint">letras, números e _ · máx. 20 caracteres</p>
+
+                <div className="cu-field">
+                  <span className="cu-prefix">#</span>
+                  <input
+                    className="cu-input"
+                    type="password"
+                    placeholder="sua_senha"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
+                <p className="cu-hint" style={{ marginBottom: '32px' }}>mínimo 6 caracteres</p>
 
                 {message && <p className="cu-error">{message}</p>}
 

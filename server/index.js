@@ -104,17 +104,22 @@ app.post('/api/auth/google/finish', async (req, res) => {
     const username = normalizeUsername(req.body.username)
     const email = normalizeEmail(req.body.email)
     const googleId = String(req.body.googleId || '')
+    const password = String(req.body.password || '')
 
-    if (!username || !email || !googleId) {
+    if (!username || !email || !googleId || !password) {
       return res.status(400).json({ error: 'missing_fields' })
     }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'password_too_short' })
+    }
 
+    const passwordHash = await bcrypt.hash(password, 10)
     const now = new Date()
     const { insertedId } = await usersCollection.insertOne({
       username,
       email,
       googleId,
-      passwordHash: null,
+      passwordHash,
       createdAt: now,
     })
 
