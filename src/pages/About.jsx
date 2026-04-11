@@ -1,5 +1,4 @@
 // src/pages/About.jsx
-// Laser shader removido para performance — About usa scroll-video + team bento + journey video
 import { useEffect, useRef } from 'react'
 import { useLanguage } from '../context/LanguageContext'
 import Navbar from '../components/Navbar'
@@ -9,9 +8,8 @@ export default function About() {
   const { t } = useLanguage()
   const scrollVideoRef = useRef()
   const scrollSectionRef = useRef()
-  const spotlightRef = useRef()
 
-  // ---------- Scroll-controlled video (igual Contact.jsx) ----------
+  // ---------- Scroll-controlled video (mantido) ----------
   useEffect(() => {
     const video = scrollVideoRef.current
     const section = scrollSectionRef.current
@@ -58,192 +56,178 @@ export default function About() {
     }
   }, [])
 
-  // ---------- Magic Bento (team cards) ----------
+  // ---------- Intersection Observer para animações de entrada ----------
   useEffect(() => {
-    const spotlight = spotlightRef.current
-    const cards = Array.from(document.querySelectorAll('.parte2 .magic-bento-card'))
+    const els = document.querySelectorAll('.reveal')
+    if (!els.length) return
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target) }
+      }),
+      { threshold: 0.12 }
+    )
+    els.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+
+  // ---------- Hover spotlight nos cards ----------
+  useEffect(() => {
+    const cards = Array.from(document.querySelectorAll('.team-card'))
     if (!cards.length) return
 
-    const PARTICLE_COUNT = window.innerWidth < 768 ? 6 : 12
-    let mouseX = 0, mouseY = 0, spotX = 0, spotY = 0, ticking = false
-
-    const createParticle = (card) => {
-      const { width, height } = card.getBoundingClientRect()
-      const el = document.createElement('div')
-      el.className = 'mb-particle'
-      el.style.left = Math.random() * width + 'px'
-      el.style.top = Math.random() * height + 'px'
-      card.appendChild(el)
-      const tx = (Math.random() - 0.5) * 90
-      const ty = (Math.random() - 0.5) * 90
-      const dur = 1800 + Math.random() * 1800
-      el.animate(
-        [
-          { transform: 'scale(0)', opacity: 0 },
-          { transform: 'scale(1)', opacity: 0.9, offset: 0.15 },
-          { transform: `translate(${tx}px,${ty}px) scale(0.8)`, opacity: 0.4, offset: 0.7 },
-          { transform: `translate(${tx * 1.3}px,${ty * 1.3}px) scale(0)`, opacity: 0 }
-        ],
-        { duration: dur, easing: 'ease-out', fill: 'forwards' }
-      ).finished.then(() => el.remove())
+    const onMove = (e, card) => {
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`)
     }
 
-    const updateSpotlight = () => {
-      spotX += (mouseX - spotX) * 0.1
-      spotY += (mouseY - spotY) * 0.1
-      if (spotlight) {
-        spotlight.style.left = spotX + 'px'
-        spotlight.style.top = spotY + 'px'
-      }
-
-      let minDist = Infinity
-      cards.forEach(card => {
-        const cr = card.getBoundingClientRect()
-        const dist = Math.max(
-          0,
-          Math.hypot(mouseX - (cr.left + cr.width / 2), mouseY - (cr.top + cr.height / 2))
-          - Math.max(cr.width, cr.height) / 2
-        )
-        minDist = Math.min(minDist, dist)
-        const intensity = dist <= 200 ? 1 : dist <= 320 ? (320 - dist) / 120 : 0
-        card.style.setProperty('--glow-x', `${((mouseX - cr.left) / cr.width) * 100}%`)
-        card.style.setProperty('--glow-y', `${((mouseY - cr.top) / cr.height) * 100}%`)
-        card.style.setProperty('--glow-intensity', intensity.toFixed(3))
-      })
-
-      if (spotlight) {
-        spotlight.style.opacity = (
-          minDist <= 200 ? 0.85 : minDist <= 320 ? ((320 - minDist) / 120) * 0.85 : 0
-        ).toFixed(3)
-      }
-      ticking = false
-    }
-
-    const onMove = e => {
-      mouseX = e.clientX; mouseY = e.clientY
-      if (!ticking) { requestAnimationFrame(updateSpotlight); ticking = true }
-    }
-    document.addEventListener('mousemove', onMove)
-
-    const cleanups = cards.map(card => {
-      let hovering = false
-      const onEnter = () => {
-        hovering = true
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-          setTimeout(() => { if (hovering) createParticle(card) }, i * 80)
-        }
-      }
-      const onLeave = () => { hovering = false }
-      card.addEventListener('mouseenter', onEnter)
-      card.addEventListener('mouseleave', onLeave)
-      return () => { card.removeEventListener('mouseenter', onEnter); card.removeEventListener('mouseleave', onLeave) }
+    const handlers = cards.map(card => {
+      const fn = e => onMove(e, card)
+      card.addEventListener('mousemove', fn)
+      return { card, fn }
     })
 
-    return () => {
-      document.removeEventListener('mousemove', onMove)
-      cleanups.forEach(fn => fn())
-    }
+    return () => handlers.forEach(({ card, fn }) => card.removeEventListener('mousemove', fn))
   }, [])
 
   const teamMembers = [
-    { nameKey: 'about_p1_name', descKey: 'about_p1_desc' },
-    { nameKey: 'about_p2_name', descKey: 'about_p2_desc' },
-    { nameKey: 'about_p3_name', descKey: 'about_p3_desc' },
-    { nameKey: 'about_p4_name', descKey: 'about_p4_desc' },
+  { nameKey: 'about_p1_name', descKey: 'about_p1_desc', index: '01', image: '/images/animal.jpg' },
+  { nameKey: 'about_p2_name', descKey: 'about_p2_desc', index: '02', image: '/images/animal2.jpg' },
+  { nameKey: 'about_p3_name', descKey: 'about_p3_desc', index: '03', image: '/images/animal3.jpg' },
+  { nameKey: 'about_p4_name', descKey: 'about_p4_desc', index: '04', image: '/images/animal4.jpg' },
+  { nameKey: 'about_p5_name', descKey: 'about_p5_desc', index: '04', image: '/images/animal5.jpg' },
+  { nameKey: 'about_p6_name', descKey: 'about_p6_desc', index: '04', image: '/images/animal6.jpg' },
+  { nameKey: 'about_p7_name', descKey: 'about_p7_desc', index: '04', image: '/images/animal7.jpg' },
+  { nameKey: 'about_p8_name', descKey: 'about_p8_desc', index: '04', image: '/images/animal8.jpg' },
+]
+
+  const values = [
+    { titleKey: 'about_val1_title', descKey: 'about_val1_desc' },
+    { titleKey: 'about_val2_title', descKey: 'about_val2_desc' },
+    { titleKey: 'about_val3_title', descKey: 'about_val3_desc' },
   ]
 
   return (
     <div className="about-container">
-      <div id="global-spotlight" ref={spotlightRef}></div>
       <Navbar />
 
-      {/* === SECTION 1: Scroll-video header (mesmo padrão que Contact) === */}
-      <div id="scroll-section" ref={scrollSectionRef} style={{ position: 'relative' }}>
-        <section
-          className="secao1"
-          style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden', margin: 0 }}
-        >
+      {/* ── HERO: scroll-controlled video (mantido) ── */}
+      <div id="scroll-section" ref={scrollSectionRef}>
+        <section className="hero-section">
           <video ref={scrollVideoRef} muted playsInline className="video-bg" />
-          <div className="overlay"></div>
-          <h1>{t('about_title')}</h1>
+          <div className="video-overlay" />
+          <div className="hero-content">
+            <span className="hero-eyebrow reveal">{t('about_purpose_tag')}</span>
+            <h1 className="hero-title reveal">{t('about_title')}</h1>
+          </div>
+          <div className="hero-scroll-hint">
+            <span />
+          </div>
         </section>
       </div>
 
-      {/* === SECTION 2: Mission & Values === */}
-      <section className="mission-values">
-        <div className="mission-content">
-          <div className="mission-left">
-            <p className="tagline">{t('about_purpose_tag')}</p>
-            <h2 className="title-large">
-              {t('about_purpose_title_1')}{' '}
-              <span className="highlight">{t('about_purpose_title_2')}</span>{' '}
-              {t('about_purpose_title_3')}{' '}
-              <span className="highlight">{t('about_purpose_title_4')}</span>
-            </h2>
+      {/* ── MANIFESTO ── */}
+      <section className="manifesto-section">
+        <div className="manifesto-inner">
+          <div className="manifesto-label reveal">{t('about_purpose_tag')}</div>
+          <h2 className="manifesto-headline reveal">
+            {t('about_purpose_title_1')}{' '}
+            <em>{t('about_purpose_title_2')}</em>{' '}
+            {t('about_purpose_title_3')}{' '}
+            <em>{t('about_purpose_title_4')}</em>
+          </h2>
+
+          {/* Stats strip */}
+          <div className="stats-strip reveal">
+            <div className="stat-item">
+              <span className="stat-num">2021</span>
+              <span className="stat-label">{t('about_stat1_label') || 'Fundação'}</span>
+            </div>
+            <div className="stat-divider" />
+            <div className="stat-item">
+              <span className="stat-num">4</span>
+              <span className="stat-label">{t('about_stat2_label') || 'Fundadores'}</span>
+            </div>
+            <div className="stat-divider" />
+            <div className="stat-item">
+              <span className="stat-num">100%</span>
+              <span className="stat-label">{t('about_stat3_label') || 'Independente'}</span>
+            </div>
+            <div className="stat-divider" />
+            <div className="stat-item">
+              <span className="stat-num">BR</span>
+              <span className="stat-label">{t('about_stat4_label') || 'Origem'}</span>
+            </div>
           </div>
-          <div className="mission-right">
-            <div className="value-item">
-              <h3>{t('about_val1_title')}</h3>
-              <p>{t('about_val1_desc')}</p>
-            </div>
-            <div className="value-item">
-              <h3>{t('about_val2_title')}</h3>
-              <p>{t('about_val2_desc')}</p>
-            </div>
-            <div className="value-item">
-              <h3>{t('about_val3_title')}</h3>
-              <p>{t('about_val3_desc')}</p>
-            </div>
+
+          <div className="values-grid">
+            {values.map((v, i) => (
+              <div key={i} className="value-block reveal" style={{ '--delay': `${i * 120}ms` }}>
+                <div className="value-num">{String(i + 1).padStart(2, '0')}</div>
+                <div className="value-divider" />
+                <h3 className="value-title">{t(v.titleKey)}</h3>
+                <p className="value-desc">{t(v.descKey)}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* === SECTION 3: Team Bento === */}
-      <section className="section2" id="secao2-section">
-        <div className="parte1">
-          <div className="left2">
-            <p>{t('about_team_tag')}</p>
-            <h1>{t('about_team_title')}</h1>
+      {/* ── TEAM ── */}
+      <section className="team-section">
+        <div className="team-header reveal">
+          <div className="team-header-left">
+            <span className="section-label">{t('about_team_tag')}</span>
+            <h2 className="section-title">{t('about_team_title')}</h2>
           </div>
-          <div className="right2">
-            <p>{t('about_team_desc')}</p>
-          </div>
+          <p className="team-desc">{t('about_team_desc')}</p>
         </div>
 
-        <div className="parte2">
+        <div className="team-grid">
           {teamMembers.map((person, idx) => (
-            <div key={idx} className="card magic-bento-card">
-              <div className="text"><h2>{t(person.nameKey)}</h2></div>
-              <div className="icon">
-                <img src="/images/Exeplo-pessoa.jpg" alt={t(person.nameKey)} />
+            <div
+              key={idx}
+              className="team-card reveal"
+              style={{ '--delay': `${idx * 80}ms` }}
+            >
+              <div className="card-spotlight" />
+              <div className="card-image-wrap">
+                <img src={person.image} alt={t(person.nameKey)} />
+                <div className="card-image-overlay" />
               </div>
-              <div className="card-infos"><p>{t(person.descKey)}</p></div>
+              <div className="card-body">
+                <span className="card-index">{person.index}</span>
+                <h3 className="card-name">{t(person.nameKey)}</h3>
+                <p className="card-desc">{t(person.descKey)}</p>
+              </div>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* === Journey video === */}
-        <div className="parte3">
-          <video src="/images/background.mp4" autoPlay muted loop playsInline />
-          <div className="history-overlay">
-            <div className="history-content">
-              <p className="tagline">{t('about_journey_tag')}</p>
-              <h2 className="history-title">
-                {t('about_journey_title1')}{' '}
-                <span className="highlight">{t('about_journey_title2')}</span>{' '}
-                {t('about_journey_title3')}
-              </h2>
-              <p className="history-text">{t('about_journey_desc')}</p>
-            </div>
-          </div>
+      {/* ── JOURNEY VIDEO ── */}
+      <section className="journey-section">
+        <video src="/images/background.mp4" autoPlay muted loop playsInline className="journey-video" />
+        <div className="journey-overlay" />
+        <div className="journey-content">
+          <span className="section-label reveal">{t('about_journey_tag')}</span>
+          <h2 className="journey-title reveal">
+            {t('about_journey_title1')}{' '}
+            <em>{t('about_journey_title2')}</em>{' '}
+            {t('about_journey_title3')}
+          </h2>
+          <p className="journey-text reveal">{t('about_journey_desc')}</p>
         </div>
       </section>
 
-      {/* === Footer === */}
+      {/* ── FOOTER ── */}
       <footer className="about-footer">
-        <video src="/images/sla_web.mp4" autoPlay muted loop playsInline />
-        <p>{t('footer_rights')}</p>
-        <h1>Biar Invest</h1>
+        <video src="/images/sla_web.mp4" autoPlay muted loop playsInline className="footer-video" />
+        <div className="footer-overlay" />
+        <div className="footer-content">
+          <h1 className="footer-wordmark">Biar Invest</h1>
+          <p className="footer-copy">{t('footer_rights')}</p>
+        </div>
       </footer>
     </div>
   )
