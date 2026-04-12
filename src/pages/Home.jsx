@@ -6,6 +6,7 @@ import Cookies from '../components/cookies'
 import { useLanguage } from '../context/LanguageContext'
 import '../styles/home.css'
 import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl'
+import FloatingLines from '../components/FloatingLines';
 
 export default function Home() {
   const { t, lang } = useLanguage()
@@ -161,15 +162,22 @@ export default function Home() {
   return (
     <>
       <div id="particles-container" ref={particlesContainerRef}></div>
+      <div style={{ width: '100%', height: '100%', position: 'absolute', zIndex: -1, opacity: 0.35, }}>
+  <FloatingLines 
+    enabledWaves={["top","middle","bottom"]}
+    // Array - specify line count per wave; Number - same count for all waves
+    lineCount={5}
+    // Array - specify line distance per wave; Number - same distance for all waves
+    lineDistance={5}
+    bendRadius={5}
+    bendStrength={-0.5}
+    interactive={true}
+    parallax={true}
+  />
+</div>
 
       <div className="container">
-        <div className="video-background">
-          <div className="overlay"></div>
-          <video autoPlay muted loop playsInline id="bg-video">
-            <source src="/images/modelo.mp4" type="video/mp4" />
-          </video>
-        </div>
-
+        
         <Navbar />
 
         <div className="left">
