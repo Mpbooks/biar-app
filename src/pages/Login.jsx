@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 import { login as loginApi } from '../api/auth'
 import GridDistortion from '../components/GridDistortion';
+import { Pointer } from 'lucide-react';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
@@ -456,9 +457,9 @@ export default function Login() {
           {/* Top bar */}
           <div className="login-topbar">
             <Link to="/" className="login-logo">
-              <img src="/images/logo_biar2.png" alt="BIAR" />
+              <img src="/images/logo_biar2.png" alt="BIAR" style={{cursor:"pointer"}} />
             </Link>
-            <Link to="/cadastro" className="login-topbar-link">
+            <Link to="/cadastro" className="login-topbar-link" style={{cursor:"pointer"}}>
               {t('login_signup')}
               <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                 <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
@@ -534,7 +535,7 @@ export default function Login() {
 
             <div className="login-footer">
               <p>{t('login_no_acc')}</p>
-              <Link to="/cadastro">{t('login_signup')}</Link>
+              <Link to="/cadastro" style={{cursor:"pointer"}}>{t('login_signup')}</Link>
             </div>
 
             <p className="login-terms">{t('terms_policy')}</p>

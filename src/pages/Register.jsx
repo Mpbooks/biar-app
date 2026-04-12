@@ -452,9 +452,9 @@ export default function Register() {
 
           <div className="reg-topbar">
             <Link to="/" className="reg-logo">
-              <img src="/images/logo_biar2.png" alt="BIAR" />
+              <img src="/images/logo_biar2.png" alt="BIAR" style={{cursor:"pointer"}} />
             </Link>
-            <Link to="/login" className="reg-topbar-link">
+            <Link to="/login" className="reg-topbar-link" style={{cursor:"pointer"}}>
               {t('sign_signin')}
               <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                 <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
@@ -529,7 +529,7 @@ export default function Register() {
 
             <div className="reg-footer">
               <p>{t('sign_have_acc')}</p>
-              <Link to="/login">{t('sign_signin')}</Link>
+              <Link to="/login" style={{cursor:"pointer"}}>{t('sign_signin')}</Link>
             </div>
 
             <p className="reg-terms">{t('terms_policy')}</p>
