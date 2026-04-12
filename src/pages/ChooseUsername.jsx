@@ -29,7 +29,7 @@ export default function ChooseUsername() {
     }
   }, [])
 
-  // Three.js scene
+  // Three.js scene com partículas em dourado
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -42,7 +42,7 @@ export default function ChooseUsername() {
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
     camera.position.z = 5
 
-    // Floating particles
+    // Partículas em dourado
     const count = 120
     const geo = new THREE.BufferGeometry()
     const positions = new Float32Array(count * 3)
@@ -61,7 +61,7 @@ export default function ChooseUsername() {
       depthWrite: false,
       uniforms: {
         uTime: { value: 0 },
-        uColor: { value: new THREE.Color('#a78bfa') },
+        uColor: { value: new THREE.Color('#cdb89f') }, // Dourado do site
       },
       vertexShader: `
         attribute float size;
@@ -92,8 +92,8 @@ export default function ChooseUsername() {
     const particles = new THREE.Points(geo, mat)
     scene.add(particles)
 
-    // Thin grid lines
-    const gridMat = new THREE.LineBasicMaterial({ color: '#2e1065', transparent: true, opacity: 0.15 })
+    // Grid lines em cor mais sutil
+    const gridMat = new THREE.LineBasicMaterial({ color: '#cdb89f', transparent: true, opacity: 0.08 })
     for (let i = -5; i <= 5; i++) {
       const hGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(-10, i * 1.5, -2),
@@ -167,7 +167,7 @@ export default function ChooseUsername() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -175,12 +175,12 @@ export default function ChooseUsername() {
           position: relative;
           min-height: 100vh;
           width: 100%;
-          background: #030009;
+          background: #000;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
-          font-family: 'Syne', sans-serif;
+          font-family: 'Montserrat', sans-serif;
         }
 
         .cu-canvas {
@@ -191,15 +191,15 @@ export default function ChooseUsername() {
           pointer-events: none;
         }
 
-        /* Radial glow behind card */
+        /* Radial glow em dourado */
         .cu-glow {
           position: fixed;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+          width: 800px;
+          height: 800px;
+          background: radial-gradient(circle, rgba(205, 184, 159, 0.1) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -207,58 +207,68 @@ export default function ChooseUsername() {
           position: relative;
           z-index: 10;
           width: 100%;
-          max-width: 420px;
-          padding: 56px 48px 48px;
-          animation: cardIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+          max-width: 460px;
+          padding: 60px 48px;
+          background: #0a0a0a;
+          border: 1.5px solid rgba(205, 184, 159, 0.25);
+          border-radius: 8px;
+          animation: cardIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          box-shadow: 
+            0 0 0 0 rgba(205, 184, 159, 0),
+            0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         @keyframes cardIn {
-          from { opacity: 0; transform: translateY(24px); }
+          from { opacity: 0; transform: translateY(30px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
         .cu-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          letter-spacing: 0.2em;
-          color: #7c3aed;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          letter-spacing: 2px;
+          color: rgba(205, 184, 159, 0.6);
           text-transform: uppercase;
           margin-bottom: 20px;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          font-weight: 600;
         }
         .cu-eyebrow::before {
           content: '';
           display: block;
-          width: 24px;
-          height: 1px;
-          background: #7c3aed;
+          width: 32px;
+          height: 1.5px;
+          background: linear-gradient(90deg, #cdb89f, #a89968);
         }
 
         .cu-heading {
-          font-size: clamp(28px, 5vw, 38px);
+          font-size: clamp(32px, 5vw, 42px);
           font-weight: 800;
-          color: #f5f0ff;
-          line-height: 1.1;
-          letter-spacing: -0.02em;
-          margin-bottom: 10px;
+          color: #F4EDE6;
+          line-height: 1.15;
+          letter-spacing: -1px;
+          margin-bottom: 16px;
+          font-family: 'Cinzel', serif;
         }
 
         .cu-sub {
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          color: #6b7280;
-          margin-bottom: 44px;
-          letter-spacing: 0.01em;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          color: rgba(244, 237, 230, 0.55);
+          margin-bottom: 48px;
+          letter-spacing: 0.3px;
+          line-height: 1.6;
         }
         .cu-sub span {
-          color: #a78bfa;
+          color: #cdb89f;
+          font-weight: 600;
         }
 
         .cu-field {
           position: relative;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
         }
 
         .cu-prefix {
@@ -266,94 +276,100 @@ export default function ChooseUsername() {
           left: 16px;
           top: 50%;
           transform: translateY(-50%);
-          font-family: 'DM Mono', monospace;
-          font-size: 14px;
-          color: #7c3aed;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 15px;
+          color: #cdb89f;
           pointer-events: none;
-          transition: opacity 0.2s;
-          opacity: 0.6;
+          transition: opacity 0.3s;
+          font-weight: 600;
         }
 
         .cu-input {
           width: 100%;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 4px;
-          padding: 16px 16px 16px 36px;
-          font-family: 'DM Mono', monospace;
-          font-size: 15px;
-          color: #f5f0ff;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(205, 184, 159, 0.15);
+          border-radius: 6px;
+          padding: 14px 16px 14px 40px;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 14px;
+          color: #F4EDE6;
           outline: none;
-          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-          letter-spacing: 0.03em;
+          transition: all 0.4s ease;
+          letter-spacing: 0.3px;
+          will-change: border-color, background, box-shadow;
         }
         .cu-input::placeholder {
-          color: rgba(255,255,255,0.15);
+          color: rgba(244, 237, 230, 0.2);
         }
         .cu-input:focus {
-          border-color: rgba(124,58,237,0.6);
-          background: rgba(124,58,237,0.05);
-          box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
+          border-color: rgba(205, 184, 159, 0.5);
+          background: rgba(205, 184, 159, 0.04);
+          box-shadow: 0 0 0 3px rgba(205, 184, 159, 0.06);
         }
 
         .cu-hint {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #4b5563;
-          letter-spacing: 0.05em;
-          margin-bottom: 16px;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          color: rgba(244, 237, 230, 0.3);
+          letter-spacing: 0.5px;
+          margin-bottom: 20px;
           padding-left: 4px;
+          font-weight: 500;
         }
 
         .cu-error {
-          font-family: 'DM Mono', monospace;
-          font-size: 11px;
-          color: #f87171;
-          letter-spacing: 0.05em;
-          margin-bottom: 20px;
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          color: #ff6b6b;
+          letter-spacing: 0.3px;
+          margin-bottom: 24px;
           padding-left: 4px;
-          animation: shake 0.3s ease;
+          animation: shake 0.4s cubic-bezier(0.36, 0, 0.66, -0.56);
+          font-weight: 500;
         }
         @keyframes shake {
           0%,100% { transform: translateX(0) }
-          25% { transform: translateX(-4px) }
-          75% { transform: translateX(4px) }
+          25% { transform: translateX(-6px) }
+          75% { transform: translateX(6px) }
         }
 
         .cu-btn {
           width: 100%;
-          padding: 16px;
-          background: #7c3aed;
+          padding: 14px 24px;
+          background: linear-gradient(135deg, #cdb89f 0%, #a89968 100%);
           border: none;
-          border-radius: 4px;
-          font-family: 'Syne', sans-serif;
+          border-radius: 6px;
+          font-family: 'Montserrat', sans-serif;
           font-size: 13px;
           font-weight: 700;
-          letter-spacing: 0.12em;
+          letter-spacing: 1.2px;
           text-transform: uppercase;
-          color: #fff;
+          color: #000;
           cursor: pointer;
           position: relative;
           overflow: hidden;
-          transition: background 0.2s, transform 0.15s;
+          transition: all 0.4s ease;
+          will-change: transform, box-shadow;
+          box-shadow: 0 4px 16px rgba(205, 184, 159, 0.15);
         }
         .cu-btn:hover:not(:disabled) {
-          background: #6d28d9;
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 28px rgba(205, 184, 159, 0.25);
         }
         .cu-btn:active:not(:disabled) {
           transform: translateY(0);
         }
         .cu-btn:disabled {
-          opacity: 0.5;
+          opacity: 0.7;
           cursor: not-allowed;
         }
         .cu-btn-shine {
           position: absolute;
           inset: 0;
-          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+          background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.15) 50%, transparent 60%);
           transform: translateX(-100%);
-          transition: transform 0.5s;
+          transition: transform 0.6s ease;
+          pointer-events: none;
         }
         .cu-btn:hover .cu-btn-shine {
           transform: translateX(100%);
@@ -363,16 +379,16 @@ export default function ChooseUsername() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 10px;
         }
 
         .cu-spinner {
-          width: 12px;
-          height: 12px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: #fff;
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(0, 0, 0, 0.2);
+          border-top-color: #000;
           border-radius: 50%;
-          animation: spin 0.6s linear infinite;
+          animation: spin 0.7s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg) } }
 
@@ -380,36 +396,83 @@ export default function ChooseUsername() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 12px;
-          animation: cardIn 0.4s ease both;
+          gap: 16px;
+          animation: cardIn 0.6s ease both;
         }
         .cu-success-icon {
-          width: 48px;
-          height: 48px;
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
-          background: rgba(124,58,237,0.15);
-          border: 1px solid rgba(124,58,237,0.3);
+          background: rgba(205, 184, 159, 0.1);
+          border: 1.5px solid rgba(205, 184, 159, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 28px;
+          color: #cdb89f;
+          animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.8); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
         .cu-success-text {
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          color: #a78bfa;
-          letter-spacing: 0.1em;
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          color: rgba(244, 237, 230, 0.6);
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          font-weight: 600;
         }
 
-        /* Thin bottom line accent */
+        /* Bottom line accent */
         .cu-line {
           position: fixed;
           bottom: 0;
           left: 0;
           right: 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, #7c3aed, transparent);
-          opacity: 0.4;
+          background: linear-gradient(90deg, transparent, rgba(205, 184, 159, 0.3), transparent);
+          opacity: 0.8;
+        }
+
+        /* Responsividade */
+        @media (max-width: 640px) {
+          .cu-card {
+            max-width: 90%;
+            padding: 48px 32px;
+            margin: 0 20px;
+          }
+
+          .cu-heading {
+            font-size: 28px;
+            margin-bottom: 12px;
+          }
+
+          .cu-sub {
+            font-size: 13px;
+            margin-bottom: 40px;
+          }
+
+          .cu-input {
+            padding: 12px 14px 12px 36px;
+            font-size: 13px;
+          }
+
+          .cu-btn {
+            padding: 12px 20px;
+            font-size: 12px;
+          }
+
+          .cu-success-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+          }
+
+          .cu-eyebrow::before {
+            width: 24px;
+          }
         }
       `}</style>
 
@@ -421,16 +484,16 @@ export default function ChooseUsername() {
           {submitted ? (
             <div className="cu-success">
               <div className="cu-success-icon">✓</div>
-              <p className="cu-success-text">entrando...</p>
+              <p className="cu-success-text">bem-vindo!</p>
             </div>
           ) : (
             <>
               <p className="cu-eyebrow">último passo</p>
-              <h1 className="cu-heading">escolha seu<br />username</h1>
+              <h1 className="cu-heading">escolha seu username</h1>
               {name ? (
-                <p className="cu-sub">olá, <span>{name}</span> — falta só isso.</p>
+                <p className="cu-sub">olá, <span>{name}</span> — complete seu perfil.</p>
               ) : (
-                <p className="cu-sub">como quer ser chamado?</p>
+                <p className="cu-sub">como você gostaria de ser chamado?</p>
               )}
 
               <form onSubmit={handleSubmit}>
@@ -451,7 +514,7 @@ export default function ChooseUsername() {
                     autoComplete="off"
                   />
                 </div>
-                <p className="cu-hint">letras, números e _ · máx. 20 caracteres</p>
+                <p className="cu-hint">letras, números e _ · máximo 20 caracteres</p>
 
                 <div className="cu-field">
                   <span className="cu-prefix">#</span>
