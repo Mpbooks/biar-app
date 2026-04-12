@@ -10,6 +10,7 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Verify from './pages/Verify'
 import NotFound from './pages/NotFound'
 import ChooseUsername from './pages/ChooseUsername'
 import Profile from './pages/Profile'
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Register />} />
+            <Route path="/verify" element={<Verify />} />
             <Route path="/escolher-username" element={<ChooseUsername />} />
             <Route path='/profile' element={< Profile/>} />
             <Route path="*" element={<NotFound />} />

@@ -415,9 +415,13 @@ export default function Register() {
     setLoading(true)
     try {
       const data = await registerApi({ username: u, email: em, password })
-      localStorage.setItem('biar_token', data.token)
-      localStorage.setItem('biar_user', JSON.stringify(data.user))
-      navigate('/')
+      if (data.status === 'pending_verification') {
+        navigate('/verify', { state: { email: data.email } })
+      } else {
+        localStorage.setItem('biar_token', data.token)
+        localStorage.setItem('biar_user', JSON.stringify(data.user))
+        navigate('/')
+      }
     } catch (err) {
       if (err.code === 'duplicate_user') setMessage(t('err_auth_duplicate'))
       else if (err.code === 'password_too_short') setMessage(t('err_auth_short_pass'))

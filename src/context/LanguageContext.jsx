@@ -39,6 +39,10 @@ const translations = {
     err_auth_network: 'Não foi possível conectar ao servidor. Inicie a API (npm run server).',
     err_auth_server: 'Erro no servidor. Tente mais tarde.',
     error_desc: 'Página não encontrada', error_btn: 'Voltar para o Início',
+    verify_title: 'Verificação', verify_sub: 'Digite o código enviado ao seu email',
+    verify_code_lbl: 'Código', verify_code_ph: '6 dígitos', verify_btn: 'VERIFICAR',
+    verify_resend: 'Reenviar código', verify_sent: 'Código reenviado!', verify_wait: 'Aguarde {s}s',
+    err_verify_fill: 'Preencha o código.', err_verify_invalid: 'Código inválido ou expirado.',
     footer_rights: '© Copyright 2025 BIAR Todos os direitos reservados.'
   },
   en: {
@@ -74,6 +78,10 @@ const translations = {
     err_auth_network: 'Could not reach the server. Start the API (npm run server).',
     err_auth_server: 'Server error. Try again later.',
     error_desc: 'Page not found', error_btn: 'Return to Home',
+    verify_title: 'Verification', verify_sub: 'Enter the code sent to your email',
+    verify_code_lbl: 'Code', verify_code_ph: '6 digits', verify_btn: 'VERIFY',
+    verify_resend: 'Resend code', verify_sent: 'Code sent!', verify_wait: 'Wait {s}s',
+    err_verify_fill: 'Please enter the code.', err_verify_invalid: 'Invalid or expired code.',
     footer_rights: '© Copyright 2025 BIAR All rights reserved.'
   },
   es: {
@@ -109,6 +117,10 @@ const translations = {
     err_auth_network: 'No se pudo conectar al servidor. Inicia la API (npm run server).',
     err_auth_server: 'Error del servidor. Intenta más tarde.',
     error_desc: 'Página no encontrada', error_btn: 'Volver al Inicio',
+    verify_title: 'Verificación', verify_sub: 'Ingresa el código enviado a tu correo',
+    verify_code_lbl: 'Código', verify_code_ph: '6 dígitos', verify_btn: 'VERIFICAR',
+    verify_resend: 'Reenviar código', verify_sent: '¡Código enviado!', verify_wait: 'Espera {s}s',
+    err_verify_fill: 'Introduce el código.', err_verify_invalid: 'Código no válido o expirado.',
     footer_rights: '© Copyright 2025 BIAR Todos los derechos reservados.'
   }
 }

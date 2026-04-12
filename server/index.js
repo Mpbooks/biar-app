@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken'
 import session from 'express-session'
 import passport from 'passport'
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20'
+import nodemailer from 'nodemailer'
 
 // ── Variáveis de ambiente ──────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 3001
@@ -40,6 +41,37 @@ function normalizeEmail(email) {
 }
 function normalizeUsername(username) {
   return String(username || '').trim()
+}
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+})
+
+async function sendVerificationEmail(email, code) {
+  if (!process.env.SMTP_USER) {
+    console.log(`\n\n=== [SIMULATED EMAIL] VERIFICATION CODE FOR ${email}: ${code} ===\n\n`)
+    return
+  }
+  try {
+    await transporter.sendMail({
+      from: `"Biar Investments" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Código de Verificação - Biar Investments',
+      text: `Seu código de verificação é: ${code}\nEste código expira em 10 minutos.`,
+      html: `<b>Seu código de verificação é:</b> <h2 style="color:#F4EDE6; background:#060504; padding:10px; display:inline-block; border-radius:8px;">${code}</h2><p>Este código expira em 10 minutos.</p>`,
+    })
+  } catch (err) {
+    console.error('Falha ao enviar e-mail:', err)
+  }
 }
 
 // ── Passport Google ────────────────────────────────────────────────────────────
@@ -121,6 +153,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
       googleId,
       passwordHash,
       createdAt: now,
+      isVerified: true
     })
 
     const token = jwt.sign(
@@ -156,23 +189,24 @@ app.post('/api/auth/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10)
     const now = new Date()
+    const verificationCode = generateCode()
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 mins
 
     const { insertedId } = await usersCollection.insertOne({
       username,
       email,
       passwordHash,
       createdAt: now,
+      isVerified: false,
+      verificationCode,
+      verificationExpires
     })
 
-    const token = jwt.sign(
-      { sub: insertedId.toString(), username, email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    )
+    await sendVerificationEmail(email, verificationCode)
 
     return res.status(201).json({
-      token,
-      user: { id: insertedId.toString(), username, email, createdAt: now },
+      status: 'pending_verification',
+      email: email,
     })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
@@ -206,6 +240,42 @@ app.post('/api/auth/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.passwordHash)
     if (!ok) return res.status(401).json({ error: 'invalid_credentials' })
 
+    const verificationCode = generateCode()
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000)
+    await usersCollection.updateOne({ _id: user._id }, { $set: { verificationCode, verificationExpires } })
+    
+    await sendVerificationEmail(user.email, verificationCode)
+
+    return res.json({
+      status: 'pending_verification',
+      email: user.email,
+    })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error', message: e.message })
+  }
+})
+
+app.post('/api/auth/verify', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email)
+    const code = String(req.body.code || '').trim()
+
+    if (!email || !code) return res.status(400).json({ error: 'missing_fields' })
+
+    const user = await usersCollection.findOne({ email })
+    if (!user) return res.status(404).json({ error: 'user_not_found' })
+
+    if (user.verificationCode !== code || !user.verificationExpires || new Date() > user.verificationExpires) {
+      return res.status(400).json({ error: 'invalid_or_expired_code' })
+    }
+
+    // Marca como ativado e apaga o código de verificação
+    await usersCollection.updateOne({ _id: user._id }, {
+      $set: { isVerified: true },
+      $unset: { verificationCode: "", verificationExpires: "" }
+    })
+
     const token = jwt.sign(
       { sub: user._id.toString(), username: user.username, email: user.email },
       JWT_SECRET,
@@ -218,7 +288,28 @@ app.post('/api/auth/login', async (req, res) => {
     })
   } catch (e) {
     console.error(e)
-    return res.status(500).json({ error: 'server_error', message: e.message })
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+app.post('/api/auth/resend', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email)
+    if (!email) return res.status(400).json({ error: 'missing_fields' })
+
+    const user = await usersCollection.findOne({ email })
+    if (!user) return res.status(404).json({ error: 'user_not_found' })
+
+    const verificationCode = generateCode()
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000)
+    await usersCollection.updateOne({ _id: user._id }, { $set: { verificationCode, verificationExpires } })
+    
+    await sendVerificationEmail(user.email, verificationCode)
+
+    return res.json({ status: 'sent' })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
   }
 })
 
