@@ -13,7 +13,7 @@ const PORT = Number(process.env.PORT) || 3001
 const MONGODB_URI = process.env.MONGODB_URI
 const JWT_SECRET = process.env.JWT_SECRET
 
-if (!MONGODB_URI) {
+if (!MONGODB_URI) {w
   console.error('Defina MONGODB_URI no arquivo .env (string de conexão do MongoDB).')
   process.exit(1)
 }
