@@ -16,6 +16,19 @@ export default function Home() {
   const [btcCurrency, setBtcCurrency] = useState('')
   const [dateStr, setDateStr] = useState('')
 
+  // Autenticação OAuth
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const user = params.get('user')
+
+    if (token && user) {
+      localStorage.setItem('biar_token', token)
+      localStorage.setItem('biar_user', user)
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
+
   // Date
   useEffect(() => {
     const d = new Date()
