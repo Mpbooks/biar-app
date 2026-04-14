@@ -94,7 +94,7 @@ export default function About() {
   { nameKey: 'about_p1_name', descKey: 'about_p1_desc', index: '01', image: '/images/animal.jpg' },
   { nameKey: 'about_p2_name', descKey: 'about_p2_desc', index: '02', image: '/images/animal2.jpg' },
   { nameKey: 'about_p3_name', descKey: 'about_p3_desc', index: '03', image: '/images/animal3.jpg' },
-  { nameKey: 'about_p4_name', descKey: 'about_p4_desc', index: '04', image: '/images/animal4.jpg' },
+  { nameKey: 'about_p4_name', descKey: 'about_p4_desc', index: '04', image: '/images/animal4.jpeg' },
   { nameKey: 'about_p5_name', descKey: 'about_p5_desc', index: '05', image: '/images/animal5.jpg' },
   { nameKey: 'about_p6_name', descKey: 'about_p6_desc', index: '06', image: '/images/animal6.jpg' },
   { nameKey: 'about_p7_name', descKey: 'about_p7_desc', index: '07', image: '/images/animal7.jpg' },
