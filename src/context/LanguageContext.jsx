@@ -16,7 +16,7 @@ const translations = {
     about_team_desc: 'Nossa plataforma fundadora alinha as probabilidades a seu favor.',
     about_p1_name: 'Paulo Wittor', about_p1_desc: 'Erro às vezes só pra disfarçar minha perfeição.',
     about_p2_name: 'Enzo Marinelli', about_p2_desc: 'Analista estratégico e parceiro.',
-    about_p3_name: 'Leandro do Amaral', about_p3_desc: 'Estrategista financeiro.',
+    about_p3_name: 'Leandro do Amaral', about_p3_desc: 'Minha maior inspiração é o Bill Gates.',
     about_p4_name: 'Caroline Xavier', about_p4_desc: 'Só quem se arrisca merece viver o extraordinário.',
     about_p5_name: 'Geovanna Pereira', about_p5_desc: 'Se não pode fazer tudo, faça tudo que puder.',
     about_p6_name: 'Rebeca Medeiros', about_p6_desc: 'Isaias 60:22.',
