@@ -3,7 +3,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { MongoClient } from 'mongodb'
+import { MongoClient, ObjectId } from 'mongodb'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import session from 'express-session'
@@ -93,7 +93,7 @@ app.use(cors({
   origin: FRONTEND_URL || true,
   credentials: true,
 }))
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use(session({
   secret: JWT_SECRET,
   resave: false,
@@ -127,7 +127,7 @@ passport.use(new GoogleStrategy({
         { sub: user._id.toString(), username: user.username, email: user.email },
         JWT_SECRET, { expiresIn: '7d' }
       )
-      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt } })
+      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt, avatar: user.avatar } })
     }
     return done(null, { existing: false, email, googleId, name })
   } catch (e) { return done(e) }
@@ -166,7 +166,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10)
     const { insertedId } = await col.insertOne({ username, email, googleId, passwordHash, createdAt: new Date(), isVerified: true })
     const token = jwt.sign({ sub: insertedId.toString(), username, email }, JWT_SECRET, { expiresIn: '7d' })
-    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date() } })
+    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date(), avatar: null } })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
     console.error(e)
@@ -263,7 +263,7 @@ app.post('/api/auth/verify', async (req, res) => {
       { sub: user._id.toString(), username: user.username, email: user.email },
       JWT_SECRET, { expiresIn: '7d' }
     )
-    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date() } })
+    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date(), avatar: user.avatar } })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })
@@ -290,6 +290,27 @@ app.post('/api/auth/resend', async (req, res) => {
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+// ── User Avatar ────────────────────────────────────────────
+app.post('/api/user/avatar', authenticateToken, async (req, res) => {
+  try {
+    const col = await getDb()
+    const userId = req.user.sub
+    const { avatar } = req.body
+    
+    if (!avatar) return res.status(400).json({ error: 'missing_avatar' })
+
+    await col.updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { avatar } }
+    )
+
+    res.json({ success: true, avatar })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: 'server_error' })
   }
 })
 
