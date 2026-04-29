@@ -1,46 +1,37 @@
 // src/pages/Profile.jsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/profile.css'
-import WalletTab from '../components/WalletTab'
+import Negociacao from '../components/Negociacao'
+import { getWallet, getQuotes } from '../api/wallet'
 
-// ── Data ───────────────────────────────────────────────────
-const NAV_ITEMS = ['Dashboard', 'Cotas', 'Projetos', 'Carteira', 'Histórico', 'Suporte']
+const NAV_ITEMS = ['Dashboard', 'Negociação', 'Histórico', 'Suporte']
 
-const WEEKLY_BARS = [
-  { day: 'D', h: 38 }, { day: 'S', h: 55 }, { day: 'T', h: 42 },
-  { day: 'Q', h: 82, active: true }, { day: 'Q', h: 67 },
-  { day: 'S', h: 71 }, { day: 'S', h: 48 },
-]
+const ACCENT_COLORS = ['#cdb89f','#a89968','#8a7a5a','#b8a882','#c4aa7a','#9e8c6a','#d4c4a0','#7a6a4a','#e0d0b0','#6a5a3a']
 
-const PROJECTS = [
-  { id: 1, title: 'Residencial Horizonte', tag: 'Imobiliário',    roi: '14,2% a.a', color: '#cdb89f', progress: 72 },
-  { id: 2, title: 'Energia Solar SP',      tag: 'Sustentável',    roi: '18,7% a.a', color: '#a89968', progress: 41 },
-  { id: 3, title: 'Hub Logístico Norte',   tag: 'Infraestrutura', roi: '11,5% a.a', color: '#8a7a5a', progress: 89 },
-]
+function fmt(n) {
+  return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
-const TASKS = [
-  { id: 1, label: 'Verificar identidade',    done: true  },
-  { id: 2, label: 'Assinar contrato base',   done: true  },
-  { id: 3, label: 'Definir perfil de risco', done: false },
-  { id: 4, label: 'Primeiro aporte',         done: false },
-  { id: 5, label: 'Revisão de carteira',     done: false },
-]
-
-// ── SVG Radial ─────────────────────────────────────────────
-function RadialProgress({ pct = 75 }) {
+// ── Radial Progress ─────────────────────────────────────────
+function RadialProgress({ pct = 0, label = 'RETORNO' }) {
+  const clamped = Math.min(100, Math.max(-100, pct))
+  const abs = Math.abs(clamped)
   const r = 48
   const circ = 2 * Math.PI * r
-  const offset = circ - (pct / 100) * circ
+  const offset = circ - (abs / 100) * circ
+  const color = clamped >= 0 ? '#4ade80' : '#f87171'
+  const sign = clamped >= 0 ? '+' : '-'
   return (
     <svg width="120" height="120" viewBox="0 0 120 120" className="prf-radial-svg">
       <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(244,237,230,0.1)" strokeWidth="8" />
       <circle
         cx="60" cy="60" r={r} fill="none"
-        stroke="url(#radialGrad)" strokeWidth="8"
+        stroke={color} strokeWidth="8"
         strokeDasharray={circ} strokeDashoffset={offset}
         strokeLinecap="round" transform="rotate(-90 60 60)"
         className="prf-radial-arc"
+        style={{ transition: 'stroke-dashoffset 0.6s ease' }}
       />
       <defs>
         <linearGradient id="radialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -48,282 +39,205 @@ function RadialProgress({ pct = 75 }) {
           <stop offset="100%" stopColor="#a89968" />
         </linearGradient>
       </defs>
-      <text x="60" y="55" textAnchor="middle" fontSize="20" fontWeight="700" fill="#F4EDE6">{pct}%</text>
-      <text x="60" y="72" textAnchor="middle" fontSize="9"  fill="rgba(244,237,230,0.4)" letterSpacing="0.5">META ANUAL</text>
+      <text x="60" y="52" textAnchor="middle" fontSize="16" fontWeight="700" fill={color}>
+        {sign}{abs.toFixed(1)}%
+      </text>
+      <text x="60" y="70" textAnchor="middle" fontSize="8" fill="rgba(244,237,230,0.4)" letterSpacing="0.5">
+        {label}
+      </text>
     </svg>
   )
 }
 
-// ── Map Component com Leaflet ────────────────────────────────────────
+// ── Mapa Leaflet ─────────────────────────────────────────────
 function MapCard() {
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const [location, setLocation] = useState({ 
-    city: 'Obtendo localização...', 
-    region: 'Brasil', 
-    lat: -23.5505, 
-    lng: -46.6333 
-  });
-  const [loading, setLoading] = useState(true);
+  const mapRef = useRef(null)
+  const mapInstanceRef = useRef(null)
+  const [location, setLocation] = useState({ city: 'Obtendo localização...', region: 'Brasil', lat: -23.5505, lng: -46.6333 })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const initMap = (lat, lng) => {
-      if (!mapRef.current || mapInstanceRef.current || !window.L) return;
-
-      const L = window.L;
-
-      const map = L.map(mapRef.current, {
-        center: [lat, lng],
-        zoom: 13,
-        zoomControl: true,
-        attributionControl: false,
-        dragging: true,
-        scrollWheelZoom: false, // Começa desativado para não atrapalhar a rolagem da página
-      });
-
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-      }).addTo(map);
-
-      // --- LOGICA DE FOCO PARA ZOOM ---
-      // Ativa o zoom por scroll apenas quando o usuário clica no mapa
-      map.on('focus', () => {
-        map.scrollWheelZoom.enable();
-      });
-
-      // Desativa o zoom quando o mouse sai, permitindo rolar a página novamente
-      map.on('blur', () => {
-        map.scrollWheelZoom.disable();
-      });
-
-      // Marcador
-      const markerDiv = document.createElement('div');
-      markerDiv.className = 'prf-user-marker';
-      L.marker([lat, lng], {
-        icon: L.divIcon({
-          html: markerDiv.outerHTML,
-          className: 'prf-marker-icon',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
-      }).addTo(map);
-
-      mapInstanceRef.current = map;
-    };
+      if (!mapRef.current || mapInstanceRef.current || !window.L) return
+      const L = window.L
+      const map = L.map(mapRef.current, { center: [lat, lng], zoom: 13, zoomControl: true, attributionControl: false, dragging: true, scrollWheelZoom: false })
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map)
+      map.on('focus', () => map.scrollWheelZoom.enable())
+      map.on('blur', () => map.scrollWheelZoom.disable())
+      const markerDiv = document.createElement('div')
+      markerDiv.className = 'prf-user-marker'
+      L.marker([lat, lng], { icon: L.divIcon({ html: markerDiv.outerHTML, className: 'prf-marker-icon', iconSize: [24, 24], iconAnchor: [12, 12] }) }).addTo(map)
+      mapInstanceRef.current = map
+    }
 
     const loadResources = () => {
       if (!document.querySelector('link[href*="leaflet.min.css"]')) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
-        document.head.appendChild(link);
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'
+        document.head.appendChild(link)
       }
-
       if (!window.L) {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-        script.async = true;
-        script.onload = () => handleGeolocation();
-        document.body.appendChild(script);
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
+        script.async = true
+        script.onload = () => handleGeolocation()
+        document.body.appendChild(script)
       } else {
-        handleGeolocation();
+        handleGeolocation()
       }
-    };
+    }
 
     const handleGeolocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
+          ({ coords: { latitude, longitude } }) => {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-              .then(res => res.json())
+              .then(r => r.json())
               .then(data => {
-                const city = data.address?.city || data.address?.town || 'Localização obtida';
-                const region = data.address?.state || 'Brasil';
-                setLocation({ city, region, lat: latitude, lng: longitude });
-                setLoading(false);
-                initMap(latitude, longitude);
+                setLocation({ city: data.address?.city || data.address?.town || 'Localização obtida', region: data.address?.state || 'Brasil', lat: latitude, lng: longitude })
+                setLoading(false)
+                initMap(latitude, longitude)
               })
-              .catch(() => {
-                setLoading(false);
-                initMap(latitude, longitude);
-              });
+              .catch(() => { setLoading(false); initMap(latitude, longitude) })
           },
-          () => {
-            setLoading(false);
-            initMap(location.lat, location.lng);
-          }
-        );
+          () => { setLoading(false); initMap(location.lat, location.lng) }
+        )
       } else {
-        setLoading(false);
-        initMap(location.lat, location.lng);
+        setLoading(false)
+        initMap(location.lat, location.lng)
       }
-    };
+    }
 
-    loadResources();
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
+    loadResources()
+    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null } }
+  }, [])
 
   return (
     <div className="prf-globe-card prf-card">
       <div className="prf-card-header-mono">
-        <span className="prf-label-mono">Live Location</span>
+        <span className="prf-label-mono">Localização</span>
         <div className="prf-live-dot"></div>
       </div>
-      <div 
-        ref={mapRef} 
-        className="prf-map-container" 
-        style={{ 
-          height: '200px', 
-          width: '100%', 
-          borderRadius: '12px', 
-          marginTop: '15px',
-          position: 'relative',
-          zIndex: 5,
-          outline: 'none' // Importante para o evento de focus funcionar
-        }}
-        tabIndex="0" // Permite que a div receba foco ao ser clicada
-      ></div>
+      <div ref={mapRef} className="prf-map-container" style={{ height: '200px', width: '100%', borderRadius: '12px', marginTop: '15px', position: 'relative', zIndex: 5, outline: 'none' }} tabIndex="0" />
       <div className="prf-globe-info">
         <p className="prf-globe-city">{loading ? '📍 Carregando...' : location.city}</p>
         <p className="prf-globe-region">{location.region}</p>
       </div>
     </div>
-  );
+  )
 }
 
-// ── Profile Component ───────────────────────────────────
+// ── Sparkline mini ───────────────────────────────────────────
+function MiniBar({ value, max, color }) {
+  const pct = max > 0 ? Math.max(4, (Math.abs(value) / max) * 100) : 4
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+      <div style={{ flex: 1, height: 6, background: 'rgba(244,237,230,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.5s ease' }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Profile Component ────────────────────────────────────────
 export default function Profile() {
   const [activeNav, setActiveNav] = useState('Dashboard')
-  const [tasks, setTasks] = useState(TASKS)
   const [user, setUser] = useState(null)
   const [wallet, setWallet] = useState(null)
-  const fileInputRef = useRef(null)
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  }
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 256;
-        const MAX_HEIGHT = 256;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
-        uploadAvatar(dataUrl);
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const uploadAvatar = async (base64Image) => {
-    try {
-      const token = localStorage.getItem('biar_token');
-      const base = import.meta.env.VITE_API_URL || '';
-      const res = await fetch(`${base}/api/user/avatar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ avatar: base64Image })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedUser = { ...user, avatar: data.avatar };
-        setUser(updatedUser);
-        localStorage.setItem('biar_user', JSON.stringify(updatedUser));
-      } else {
-        alert('Erro ao atualizar foto');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Erro ao atualizar foto');
-    }
-  };
+  const [quotes, setQuotes] = useState({})
+  const [loadingWallet, setLoadingWallet] = useState(true)
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('biar_user')
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
+    const stored = localStorage.getItem('biar_user')
+    if (stored) setUser(JSON.parse(stored))
   }, [])
 
+  // Carrega carteira do banco
   useEffect(() => {
-    const fetchProfileWallet = async () => {
-      try {
-        const token = localStorage.getItem('biar_token')
-        if (!token) return
-        const base = import.meta.env.VITE_API_URL || ''
-        const res = await fetch(`${base}/api/wallet`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setWallet(data)
-        }
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    if (activeNav === 'Dashboard') {
-      fetchProfileWallet()
-    }
-  }, [activeNav])
+    const token = localStorage.getItem('biar_token')
+    if (!token) { setLoadingWallet(false); return }
+    getWallet()
+      .then(w => { setWallet(w); setLoadingWallet(false) })
+      .catch(() => setLoadingWallet(false))
+  }, [])
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  }
+  // Carrega cotações dos ativos em carteira
+  useEffect(() => {
+    if (!wallet) return
+    const symbols = Object.keys(wallet.positions || {})
+    if (symbols.length === 0) return
+    getQuotes(symbols)
+      .then(data => {
+        const q = {}
+        ;(data.results || []).forEach(r => { q[r.symbol] = r })
+        setQuotes(q)
+      })
+      .catch(() => {})
+  }, [wallet])
 
   const formatMemberSince = (dateString) => {
-    if (!dateString) return 'Mar 2022'
+    if (!dateString) return '—'
     const d = new Date(dateString)
-    const m = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
-    const y = d.getFullYear()
-    return m.charAt(0).toUpperCase() + m.slice(1) + ' ' + y
+    return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '')
   }
 
   const displayName = user?.username || 'Usuário'
   const memberSince = formatMemberSince(user?.createdAt)
 
-  const userAvatar = user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=88&h=88&fit=crop"
-  const userAvatarMini = user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop"
+  // ── Cálculos da carteira ──────────────────────────────────
+  const positions = wallet?.positions || {}
+  const history = wallet?.history || []
+  const balance = wallet?.balance ?? 0
+
+  const posEntries = Object.entries(positions)
+
+  const totalInvested = posEntries.reduce((a, [, p]) => a + p.avgPrice * p.qty, 0)
+  const totalMarket = posEntries.reduce((a, [sym, p]) => {
+    const q = quotes[sym]
+    return a + (q ? q.regularMarketPrice * p.qty : p.avgPrice * p.qty)
+  }, 0)
+  const totalEquity = balance + totalMarket
+  const unrealizedPL = totalMarket - totalInvested
+  const returnPct = ((totalEquity - 10000) / 10000) * 100
+  const totalOperations = history.length
+
+  // Alocação por ativo (% do patrimônio em ações)
+  const allocations = posEntries.map(([sym, pos], i) => {
+    const q = quotes[sym]
+    const mktVal = q ? q.regularMarketPrice * pos.qty : pos.avgPrice * pos.qty
+    const pct = totalMarket > 0 ? (mktVal / totalMarket) * 100 : 0
+    const pl = q ? (q.regularMarketPrice - pos.avgPrice) * pos.qty : 0
+    const plPct = ((q?.regularMarketPrice ?? pos.avgPrice) - pos.avgPrice) / pos.avgPrice * 100
+    return { sym, pos, mktVal, pct, pl, plPct, color: ACCENT_COLORS[i % ACCENT_COLORS.length] }
+  }).sort((a, b) => b.mktVal - a.mktVal)
+
+  // Operações por dia da semana (últimos 7 dias)
+  const DAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+  const today = new Date()
+  const weekBars = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(today.getDate() - (6 - i))
+    const count = history.filter(h => {
+      const hd = new Date(h.date?.split(' ')[0]?.split('/').reverse().join('-'))
+      return hd.toDateString() === d.toDateString()
+    }).length
+    return { day: DAY_LABELS[d.getDay()], count, isToday: i === 6 }
+  })
+  const maxBar = Math.max(...weekBars.map(b => b.count), 1)
+
+  // Progresso da conta (baseado em tarefas reais)
+  const accountTasks = [
+    { label: 'Criar conta', done: true },
+    { label: 'Verificar e-mail', done: !!user },
+    { label: 'Primeiro aporte simulado', done: totalOperations > 0 },
+    { label: 'Realizar primeira venda', done: history.some(h => h.side === 'SELL') },
+    { label: 'Ter 3+ posições abertas', done: posEntries.length >= 3 },
+  ]
+  const accountProgress = Math.round((accountTasks.filter(t => t.done).length / accountTasks.length) * 100)
 
   return (
     <div className="prf-root">
-      {/* ── NAVBAR Original mantido ─────────────────────────────────────── */}
       <header className="prf-header">
         <Link to="/" className="prf-logo">
           <img src="/images/logo_biar2.png" alt="BIAR" className="prf-logo-img" />
@@ -332,259 +246,284 @@ export default function Profile() {
 
         <nav className="prf-nav">
           {NAV_ITEMS.map(item => (
-            <button
-              key={item}
-              className={`prf-nav-btn ${activeNav === item ? 'prf-nav-btn--active' : ''}`}
-              onClick={() => setActiveNav(item)}
-            >
+            <button key={item} className={`prf-nav-btn ${activeNav === item ? 'prf-nav-btn--active' : ''}`} onClick={() => setActiveNav(item)}>
               {item}
             </button>
           ))}
         </nav>
 
         <div className="prf-header-actions">
-          <button className="prf-icon-btn" title="Search">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-          </button>
-
-          <button className="prf-icon-btn" title="Notifications">
+          <button className="prf-icon-btn" title="Notificações">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <div className="prf-notif-dot"></div>
           </button>
-
           <div className="prf-avatar-mini">
-            <img src={userAvatarMini} alt="Avatar" />
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#cdb89f' }}>{displayName[0]?.toUpperCase()}</span>
           </div>
         </div>
       </header>
 
-      {/* ── MAIN CONTENT ────────────────────────────────────────────────── */}
       <main className="prf-main">
-        {activeNav === 'Dashboard' ? (
-          <>
-            {/* Welcome Row */}
-            <div className="prf-welcome-row">
-          <div>
-            <div className="prf-welcome-eyebrow">
-              <span className="prf-welcome-line"></span>
-              Bem-vindo de volta
-            </div>
-            <h1 className="prf-welcome-h1">{displayName}</h1>
-            <div className="prf-tags-row">
-              <span className="prf-tag">Investidor Ativo</span>
-              <span className="prf-tag prf-tag--accent">Alto Potencial</span>
-              <span className="prf-tag">Portfólio Premium</span>
-            </div>
-          </div>
+        {activeNav === 'Negociação' && <Negociacao />}
 
-          <div className="prf-welcome-stats">
-            <div className="prf-stat">
-              <div className="prf-stat-num">
-                {wallet ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(wallet.balance) : 'R$ ---'}
-              </div>
-              <div className="prf-stat-label">Saldo em Conta</div>
-            </div>
-            <div className="prf-stat-divider"></div>
-            <div className="prf-stat">
-              <div className="prf-stat-num">+18,4%</div>
-              <div className="prf-stat-label">Retorno YTD</div>
-            </div>
-            <div className="prf-stat-divider"></div>
-            <div className="prf-stat">
-              <div className="prf-stat-num">
-                {wallet?.positions ? Object.keys(wallet.positions).length : 0}
-              </div>
-              <div className="prf-stat-label">Ativos Diferentes</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bento Grid */}
-        <div className="prf-bento">
-          {/* Col A - Left Column */}
-          <div className="prf-col-a">
-            {/* Map */}
-            <MapCard />
-
-            {/* Profile Card */}
-            <div className="prf-card prf-profile-card">
-              <div className="prf-avatar-wrap" onClick={handleAvatarClick} style={{ cursor: 'pointer', position: 'relative' }}>
-                <img src={userAvatar} alt="Profile" className="prf-avatar-img" />
-                <div className="prf-status-dot"></div>
-                <div className="prf-avatar-overlay" style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                  background: 'rgba(0,0,0,0.5)', borderRadius: '50%', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  opacity: 0, transition: 'opacity 0.2s', color: '#fff', fontSize: '12px', fontWeight: 'bold'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
-                >
-                  Alterar
-                </div>
-              </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                onChange={handleFileChange} 
-              />
-              <h2 className="prf-profile-name">{displayName}</h2>
-              <p className="prf-profile-role">Investidora Institucional</p>
-              <div className="prf-profile-info">
-                <div className="prf-profile-info-row">
-                  <span>Conta:</span>
-                  <strong>Premium Plus</strong>
-                </div>
-                <div className="prf-profile-info-row">
-                  <span>Membro desde:</span>
-                  <strong>{memberSince}</strong>
-                </div>
-                <div className="prf-profile-info-row">
-                  <span>Verificação:</span>
-                  <strong>100%</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Col B - Center Column */}
-          <div>
-            {/* Activity & Tracker Row */}
-            <div className="prf-row-top">
-              {/* Activity */}
-              <div className="prf-card prf-activity-card">
-                <span className="prf-label-mono">Atividade Semanal</span>
-                <div className="prf-activity-bars">
-                  {WEEKLY_BARS.map((bar, i) => (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div
-                        className={`prf-bar ${bar.active ? 'prf-bar--active' : ''}`}
-                        style={{ height: `${bar.h}px` }}
-                      />
-                      <span className="prf-bar-day">{bar.day}</span>
-                    </div>
+        {activeNav === 'Histórico' && (
+          <div className="prf-card" style={{ marginTop: 8 }}>
+            <h3 className="prf-section-title" style={{ marginBottom: 20 }}>Histórico de Operações</h3>
+            {history.length === 0 ? (
+              <p style={{ color: 'rgba(244,237,230,0.3)', fontSize: 13, textAlign: 'center', padding: '40px 0' }}>
+                Nenhuma operação realizada. Acesse Negociação para começar.
+              </p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    {['Data', 'Tipo', 'Ativo', 'Qtd', 'Preço', 'Total'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(244,237,230,0.35)', borderBottom: '1px solid rgba(244,237,230,0.08)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map(h => (
+                    <tr key={h.id}>
+                      <td style={{ padding: '11px 12px', color: 'rgba(244,237,230,0.5)', borderBottom: '1px solid rgba(244,237,230,0.05)' }}>{h.date}</td>
+                      <td style={{ padding: '11px 12px', borderBottom: '1px solid rgba(244,237,230,0.05)' }}>
+                        <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: h.side === 'BUY' ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)', color: h.side === 'BUY' ? '#4ade80' : '#f87171' }}>
+                          {h.side === 'BUY' ? 'COMPRA' : 'VENDA'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '11px 12px', color: '#F4EDE6', fontWeight: 700, borderBottom: '1px solid rgba(244,237,230,0.05)' }}>{h.symbol}</td>
+                      <td style={{ padding: '11px 12px', color: '#F4EDE6', borderBottom: '1px solid rgba(244,237,230,0.05)' }}>{h.qty}</td>
+                      <td style={{ padding: '11px 12px', color: '#F4EDE6', borderBottom: '1px solid rgba(244,237,230,0.05)' }}>R$ {fmt(h.price)}</td>
+                      <td style={{ padding: '11px 12px', color: h.side === 'BUY' ? '#f87171' : '#4ade80', fontWeight: 600, borderBottom: '1px solid rgba(244,237,230,0.05)' }}>
+                        {h.side === 'BUY' ? '-' : '+'}R$ {fmt(h.total)}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-
-              {/* Tracker */}
-              <div className="prf-card prf-tracker-card">
-                <span className="prf-label-mono">Meta Anual</span>
-                <div className="prf-tracker-body">
-                  <RadialProgress pct={62} />
-                </div>
-              </div>
-            </div>
-
-            {/* Projects */}
-            <div className="prf-card prf-projects-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 className="prf-section-title">Portfólio</h3>
-                <button className="prf-view-all-btn" onClick={() => setActiveNav('Carteira')}>Ver Carteira</button>
-              </div>
-              <div className="prf-projects-list">
-                {wallet && wallet.positions && Object.keys(wallet.positions).length > 0 ? (
-                  Object.entries(wallet.positions).map(([sym, data]) => {
-                    const totalValue = data.qty * data.avgPrice;
-                    return (
-                      <div key={sym} className="prf-project-row">
-                        <div className="prf-project-accent" style={{ background: '#cdb89f' }}></div>
-                        <div className="prf-project-info">
-                          <span className="prf-project-name">{sym}</span>
-                          <span className="prf-project-meta">Preço Médio: <strong>R$ {data.avgPrice.toFixed(2)}</strong></span>
-                        </div>
-                        <div className="prf-project-right">
-                          <div style={{ textAlign: 'right', marginRight: '15px' }}>
-                            <div style={{ color: '#F4EDE6', fontWeight: 'bold' }}>{data.qty} cotas</div>
-                            <div style={{ color: 'rgba(244,237,230,0.5)', fontSize: '11px' }}>R$ {totalValue.toFixed(2)}</div>
-                          </div>
-                          <button className="prf-project-btn" onClick={() => setActiveNav('Carteira')}>Negociar</button>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <p style={{ color: 'rgba(244,237,230,0.5)', fontSize: '13px' }}>Você ainda não comprou nenhuma ação.</p>
-                )}
-              </div>
-            </div>
+                </tbody>
+              </table>
+            )}
           </div>
+        )}
 
-          {/* Col C - Right Column */}
-          <div className="prf-col-c">
-            {/* Onboarding */}
-            <div className="prf-card prf-onboard-card">
-              <div className="prf-onboard-header">
-                <span className="prf-label-mono">Progresso</span>
-                <span className="prf-onboard-pct">60%</span>
+        {activeNav === 'Suporte' && (
+          <div className="prf-card" style={{ marginTop: 8, textAlign: 'center', padding: '60px 40px' }}>
+            <p style={{ fontSize: 32, marginBottom: 16 }}>🛠️</p>
+            <h3 className="prf-section-title">Suporte</h3>
+            <p style={{ color: 'rgba(244,237,230,0.4)', fontSize: 13, marginTop: 12 }}>Em breve. Entre em contato pela página de <Link to="/contact" style={{ color: '#cdb89f' }}>Contato</Link>.</p>
+          </div>
+        )}
+
+        {activeNav === 'Dashboard' && (
+          <>
+            {/* ── Welcome Row ─────────────────────────────── */}
+            <div className="prf-welcome-row">
+              <div>
+                <div className="prf-welcome-eyebrow">
+                  <span className="prf-welcome-line"></span>
+                  Bem-vindo de volta
+                </div>
+                <h1 className="prf-welcome-h1">{displayName}</h1>
+                <div className="prf-tags-row">
+                  <span className="prf-tag">{posEntries.length > 0 ? 'Investidor Ativo' : 'Novo Investidor'}</span>
+                  {returnPct > 0 && <span className="prf-tag prf-tag--accent">Carteira Positiva</span>}
+                  {posEntries.length >= 3 && <span className="prf-tag">Portfólio Diversificado</span>}
+                </div>
               </div>
-              <div className="prf-onboard-score">60</div>
-              <div className="prf-onboard-track">
-                <div className="prf-onboard-fill" style={{ width: '60%' }}></div>
+
+              <div className="prf-welcome-stats">
+                <div className="prf-stat">
+                  <div className="prf-stat-num" style={{ fontSize: loadingWallet ? 16 : undefined }}>
+                    {loadingWallet ? '...' : `R$ ${totalInvested >= 1000 ? (totalInvested / 1000).toFixed(1) + 'K' : fmt(totalInvested)}`}
+                  </div>
+                  <div className="prf-stat-label">Capital Investido</div>
+                </div>
+                <div className="prf-stat-divider"></div>
+                <div className="prf-stat">
+                  <div className="prf-stat-num" style={{ color: returnPct >= 0 ? '#4ade80' : '#f87171' }}>
+                    {loadingWallet ? '...' : `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`}
+                  </div>
+                  <div className="prf-stat-label">Retorno Total</div>
+                </div>
+                <div className="prf-stat-divider"></div>
+                <div className="prf-stat">
+                  <div className="prf-stat-num">{loadingWallet ? '...' : posEntries.length}</div>
+                  <div className="prf-stat-label">Posições Abertas</div>
+                </div>
               </div>
-              <div className="prf-tasks-list">
-                {tasks.map(task => (
-                  <button
-                    key={task.id}
-                    className={`prf-task-item ${task.done ? 'prf-task-item--done' : ''}`}
-                    onClick={() => toggleTask(task.id)}
-                  >
-                    <div className={`prf-task-check ${task.done ? 'prf-task-check--done' : ''}`}>
-                      {task.done && '✓'}
+            </div>
+
+            {/* ── Bento Grid ──────────────────────────────── */}
+            <div className="prf-bento">
+
+              {/* Col A */}
+              <div className="prf-col-a">
+                <MapCard />
+
+                {/* Perfil */}
+                <div className="prf-card prf-profile-card">
+                  <div className="prf-avatar-wrap" style={{ background: 'rgba(205,184,159,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 32, fontWeight: 800, color: '#cdb89f' }}>{displayName[0]?.toUpperCase()}</span>
+                    <div className="prf-status-dot"></div>
+                  </div>
+                  <h2 className="prf-profile-name">{displayName}</h2>
+                  <p className="prf-profile-role">{user?.email || '—'}</p>
+                  <div className="prf-profile-info">
+                    <div className="prf-profile-info-row">
+                      <span>Patrimônio:</span>
+                      <strong style={{ color: '#cdb89f' }}>R$ {fmt(totalEquity)}</strong>
                     </div>
-                    <span className="prf-task-label">{task.label}</span>
-                  </button>
-                ))}
+                    <div className="prf-profile-info-row">
+                      <span>Saldo livre:</span>
+                      <strong>R$ {fmt(balance)}</strong>
+                    </div>
+                    <div className="prf-profile-info-row">
+                      <span>Membro desde:</span>
+                      <strong>{memberSince}</strong>
+                    </div>
+                    <div className="prf-profile-info-row">
+                      <span>Operações:</span>
+                      <strong>{totalOperations}</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Allocations */}
-            <div className="prf-card prf-alloc-card">
-              <span className="prf-label-mono prf-alloc-label-top">Alocação de Ativos</span>
-              <div className="prf-alloc-list">
-                <div className="prf-alloc-row">
-                  <div className="prf-alloc-dot"></div>
-                  <span className="prf-alloc-lbl">Imobiliário</span>
-                  <div className="prf-alloc-track">
-                    <div className="prf-alloc-fill" style={{ width: '45%' }} />
+              {/* Col B */}
+              <div>
+                <div className="prf-row-top">
+                  {/* Atividade — operações por dia */}
+                  <div className="prf-card prf-activity-card">
+                    <span className="prf-label-mono">Operações (7 dias)</span>
+                    <div className="prf-activity-bars">
+                      {weekBars.map((bar, i) => (
+                        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <div
+                            className={`prf-bar ${bar.isToday ? 'prf-bar--active' : ''}`}
+                            style={{ height: `${bar.count > 0 ? Math.max(12, (bar.count / maxBar) * 82) : 6}px`, opacity: bar.count === 0 ? 0.2 : 1 }}
+                          />
+                          <span className="prf-bar-day">{bar.day}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {totalOperations === 0 && (
+                      <p style={{ fontSize: 11, color: 'rgba(244,237,230,0.3)', textAlign: 'center', marginTop: 8 }}>
+                        Nenhuma operação ainda
+                      </p>
+                    )}
                   </div>
-                  <span className="prf-alloc-num">45%</span>
+
+                  {/* Retorno total */}
+                  <div className="prf-card prf-tracker-card">
+                    <span className="prf-label-mono">Retorno Total</span>
+                    <div className="prf-tracker-body">
+                      <RadialProgress pct={returnPct} label="VS INICIAL" />
+                    </div>
+                    <div style={{ textAlign: 'center', marginTop: 8 }}>
+                      <span style={{ fontSize: 11, color: 'rgba(244,237,230,0.4)' }}>
+                        P&L: <span style={{ color: unrealizedPL >= 0 ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                          {unrealizedPL >= 0 ? '+' : ''}R$ {fmt(unrealizedPL)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="prf-alloc-row">
-                  <div className="prf-alloc-dot"></div>
-                  <span className="prf-alloc-lbl">Infraestrutura</span>
-                  <div className="prf-alloc-track">
-                    <div className="prf-alloc-fill" style={{ width: '30%' }} />
+
+                {/* Posições abertas */}
+                <div className="prf-card prf-projects-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h3 className="prf-section-title">Posições Abertas</h3>
+                    <button className="prf-view-all-btn" onClick={() => setActiveNav('Negociação')}>
+                      Negociar
+                    </button>
                   </div>
-                  <span className="prf-alloc-num">30%</span>
+
+                  {loadingWallet ? (
+                    <p style={{ color: 'rgba(244,237,230,0.3)', fontSize: 13 }}>Carregando...</p>
+                  ) : allocations.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                      <p style={{ color: 'rgba(244,237,230,0.3)', fontSize: 13 }}>Nenhuma posição aberta.</p>
+                      <button className="prf-view-all-btn" style={{ marginTop: 12 }} onClick={() => setActiveNav('Negociação')}>
+                        Ir para Negociação →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="prf-projects-list">
+                      {allocations.map(({ sym, pos, mktVal, pct, pl, plPct, color }) => (
+                        <div key={sym} className="prf-project-row">
+                          <div className="prf-project-accent" style={{ background: color }}></div>
+                          <div className="prf-project-info">
+                            <span className="prf-project-name">{sym}</span>
+                            <span className="prf-project-meta">
+                              {pos.qty} ações • PM R$ {fmt(pos.avgPrice)}
+                            </span>
+                          </div>
+                          <div className="prf-project-right">
+                            <div className="prf-mini-bar-wrap">
+                              <div className="prf-mini-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                            </div>
+                            <span className="prf-mini-bar-pct">{pct.toFixed(0)}%</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: pl >= 0 ? '#4ade80' : '#f87171', minWidth: 60, textAlign: 'right' }}>
+                              {pl >= 0 ? '+' : ''}{plPct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="prf-alloc-row">
-                  <div className="prf-alloc-dot"></div>
-                  <span className="prf-alloc-lbl">Sustentável</span>
-                  <div className="prf-alloc-track">
-                    <div className="prf-alloc-fill" style={{ width: '25%' }} />
+              </div>
+
+              {/* Col C */}
+              <div className="prf-col-c">
+                {/* Progresso da conta */}
+                <div className="prf-card prf-onboard-card">
+                  <div className="prf-onboard-header">
+                    <span className="prf-label-mono">Progresso da Conta</span>
+                    <span className="prf-onboard-pct">{accountProgress}%</span>
                   </div>
-                  <span className="prf-alloc-num">25%</span>
+                  <div className="prf-onboard-score">{accountProgress}</div>
+                  <div className="prf-onboard-track">
+                    <div className="prf-onboard-fill" style={{ width: `${accountProgress}%`, transition: 'width 0.6s ease' }}></div>
+                  </div>
+                  <div className="prf-tasks-list">
+                    {accountTasks.map((task, i) => (
+                      <div key={i} className={`prf-task-item ${task.done ? 'prf-task-item--done' : ''}`} style={{ cursor: 'default' }}>
+                        <div className={`prf-task-check ${task.done ? 'prf-task-check--done' : ''}`}>
+                          {task.done && '✓'}
+                        </div>
+                        <span className="prf-task-label">{task.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Alocação por ativo */}
+                <div className="prf-card prf-alloc-card">
+                  <span className="prf-label-mono prf-alloc-label-top">Alocação por Ativo</span>
+                  {allocations.length === 0 ? (
+                    <p style={{ color: 'rgba(244,237,230,0.3)', fontSize: 12, marginTop: 16, textAlign: 'center' }}>
+                      Sem posições abertas
+                    </p>
+                  ) : (
+                    <div className="prf-alloc-list">
+                      {allocations.map(({ sym, pct, color }) => (
+                        <div key={sym} className="prf-alloc-row">
+                          <div className="prf-alloc-dot" style={{ background: color }}></div>
+                          <span className="prf-alloc-lbl">{sym}</span>
+                          <div className="prf-alloc-track">
+                            <div className="prf-alloc-fill" style={{ width: `${pct}%`, background: color, transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span className="prf-alloc-num">{pct.toFixed(0)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-        </>
-        ) : activeNav === 'Carteira' ? (
-          <WalletTab />
-        ) : (
-          <div className="prf-card" style={{ textAlign: 'center', padding: '100px 0' }}>
-            <h2 className="prf-welcome-h1" style={{ color: 'rgba(244,237,230,0.5)' }}>Em breve</h2>
-          </div>
+          </>
         )}
       </main>
     </div>
