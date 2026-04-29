@@ -213,10 +213,10 @@ export default function Contact() {
           <div className="left2 magic-bento-card">
             <h2>BIAR</h2>
             <div className="contact-infos">
-              <p>Ulica grada Vukovara 23</p>
-              <p>10000 Zagreb, Croatia</p>
-              <p>+385 (1) 63 87 451</p>
-              <p>info@bosqar.com</p>
+              <p>Paulo Wittor</p>
+              <p>Rio de Janeiro, Brasil</p>
+              <p>+55 21 98025-8526</p>
+              <p>wittorpaulo25@gmail.com</p>
             </div>
           </div>
 
@@ -224,20 +224,20 @@ export default function Contact() {
             <h2>{t('contact_card2_title')}</h2>
             <div className="contact-infos">
               <p>{t('contact_card2_press')}</p>
-              <p>press@bosqar.com</p>
-              <p>Robin-Ivan Capar</p>
-              <p>+47 412 06 576</p>
-              <p>Nikolina Antolić</p>
-              <p>+47 412 06 576</p>
+              <p>	enzocalfo.dev@gmail.com</p>
+              <p>Enzo Marinelli</p>
+              <p>+55 21 98806-0804</p>
+              <p>Leandro do Amaral</p>
+              <p>+55 21 96615-5348</p>
             </div>
           </div>
 
           <div className="down magic-bento-card">
             <h2>{t('contact_card3_title')}</h2>
             <div className="contact-infos">
-              <p>Martina Jelčić</p>
-              <p>+385 99 348 9579</p>
-              <p>ir@bosqar.com</p>
+              <p>Gustavo Barbosa</p>
+              <p>+55 21 95943-0603</p>
+              <p>gusta08@gmail.com</p>
             </div>
           </div>
         </section>
