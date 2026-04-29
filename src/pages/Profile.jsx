@@ -204,6 +204,75 @@ export default function Profile() {
   const [tasks, setTasks] = useState(TASKS)
   const [user, setUser] = useState(null)
   const [wallet, setWallet] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 256;
+        const MAX_HEIGHT = 256;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        uploadAvatar(dataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadAvatar = async (base64Image) => {
+    try {
+      const token = localStorage.getItem('biar_token');
+      const base = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${base}/api/user/avatar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ avatar: base64Image })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = { ...user, avatar: data.avatar };
+        setUser(updatedUser);
+        localStorage.setItem('biar_user', JSON.stringify(updatedUser));
+      } else {
+        alert('Erro ao atualizar foto');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao atualizar foto');
+    }
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('biar_user')
@@ -249,6 +318,9 @@ export default function Profile() {
   const displayName = user?.username || 'Usuário'
   const memberSince = formatMemberSince(user?.createdAt)
 
+  const userAvatar = user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=88&h=88&fit=crop"
+  const userAvatarMini = user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop"
+
   return (
     <div className="prf-root">
       {/* ── NAVBAR Original mantido ─────────────────────────────────────── */}
@@ -287,7 +359,7 @@ export default function Profile() {
           </button>
 
           <div className="prf-avatar-mini">
-            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop" alt="Avatar" />
+            <img src={userAvatarMini} alt="Avatar" />
           </div>
         </div>
       </header>
@@ -342,10 +414,28 @@ export default function Profile() {
 
             {/* Profile Card */}
             <div className="prf-card prf-profile-card">
-              <div className="prf-avatar-wrap">
-                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=88&h=88&fit=crop" alt="Profile" className="prf-avatar-img" />
+              <div className="prf-avatar-wrap" onClick={handleAvatarClick} style={{ cursor: 'pointer', position: 'relative' }}>
+                <img src={userAvatar} alt="Profile" className="prf-avatar-img" />
                 <div className="prf-status-dot"></div>
+                <div className="prf-avatar-overlay" style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                  background: 'rgba(0,0,0,0.5)', borderRadius: '50%', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  opacity: 0, transition: 'opacity 0.2s', color: '#fff', fontSize: '12px', fontWeight: 'bold'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                >
+                  Alterar
+                </div>
               </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept="image/*" 
+                onChange={handleFileChange} 
+              />
               <h2 className="prf-profile-name">{displayName}</h2>
               <p className="prf-profile-role">Investidora Institucional</p>
               <div className="prf-profile-info">
