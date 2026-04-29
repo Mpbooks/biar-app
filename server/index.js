@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { MongoClient } from 'mongodb'
+import { MongoClient, ObjectId } from 'mongodb'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import session from 'express-session'
@@ -26,7 +26,7 @@ if (!JWT_SECRET || JWT_SECRET.length < 16) {
 // ── App e middlewares ──────────────────────────────────────────────────────────
 const app = express()
 app.use(cors({ origin: true, credentials: true }))
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use(session({ secret: JWT_SECRET, resave: false, saveUninitialized: false }))
 app.use(passport.initialize())
 app.use(passport.session())
@@ -110,7 +110,7 @@ passport.use(new GoogleStrategy({
         JWT_SECRET,
         { expiresIn: '7d' }
       )
-      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt } })
+      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt, avatar: user.avatar } })
     }
 
     return done(null, { existing: false, email, googleId, name })
@@ -177,7 +177,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
 
     return res.status(201).json({
       token,
-      user: { id: insertedId.toString(), username, email, createdAt: now },
+      user: { id: insertedId.toString(), username, email, createdAt: now, avatar: null },
     })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
@@ -297,7 +297,7 @@ app.post('/api/auth/verify', async (req, res) => {
 
     return res.json({
       token,
-      user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date() },
+      user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date(), avatar: user.avatar },
     })
   } catch (e) {
     console.error(e)
@@ -325,6 +325,26 @@ app.post('/api/auth/resend', async (req, res) => {
     return res.status(500).json({ error: 'server_error' })
   }
 })
+
+// ── User Avatar ────────────────────────────────────────────────────────────────
+app.post('/api/user/avatar', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.sub;
+    const { avatar } = req.body;
+    
+    if (!avatar) return res.status(400).json({ error: 'missing_avatar' });
+
+    await usersCollection.updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { avatar } }
+    );
+
+    res.json({ success: true, avatar });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
 
 // ── Rotas de Carteira (Wallet) ─────────────────────────────────────────────────
 app.get('/api/wallet', authenticateToken, async (req, res) => {
