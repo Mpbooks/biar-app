@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/profile.css'
+import WalletTab from '../components/WalletTab'
 
 // ── Data ───────────────────────────────────────────────────
 const NAV_ITEMS = ['Dashboard', 'Cotas', 'Projetos', 'Carteira', 'Histórico', 'Suporte']
@@ -202,6 +203,7 @@ export default function Profile() {
   const [activeNav, setActiveNav] = useState('Dashboard')
   const [tasks, setTasks] = useState(TASKS)
   const [user, setUser] = useState(null)
+  const [wallet, setWallet] = useState(null)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('biar_user')
@@ -209,6 +211,28 @@ export default function Profile() {
       setUser(JSON.parse(storedUser))
     }
   }, [])
+
+  useEffect(() => {
+    const fetchProfileWallet = async () => {
+      try {
+        const token = localStorage.getItem('biar_token')
+        if (!token) return
+        const base = import.meta.env.VITE_API_URL || ''
+        const res = await fetch(`${base}/api/wallet`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setWallet(data)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    if (activeNav === 'Dashboard') {
+      fetchProfileWallet()
+    }
+  }, [activeNav])
 
   const toggleTask = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t))
@@ -270,8 +294,10 @@ export default function Profile() {
 
       {/* ── MAIN CONTENT ────────────────────────────────────────────────── */}
       <main className="prf-main">
-        {/* Welcome Row */}
-        <div className="prf-welcome-row">
+        {activeNav === 'Dashboard' ? (
+          <>
+            {/* Welcome Row */}
+            <div className="prf-welcome-row">
           <div>
             <div className="prf-welcome-eyebrow">
               <span className="prf-welcome-line"></span>
@@ -287,8 +313,10 @@ export default function Profile() {
 
           <div className="prf-welcome-stats">
             <div className="prf-stat">
-              <div className="prf-stat-num">R$ 582K</div>
-              <div className="prf-stat-label">Capital Investido</div>
+              <div className="prf-stat-num">
+                {wallet ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(wallet.balance) : 'R$ ---'}
+              </div>
+              <div className="prf-stat-label">Saldo em Conta</div>
             </div>
             <div className="prf-stat-divider"></div>
             <div className="prf-stat">
@@ -297,8 +325,10 @@ export default function Profile() {
             </div>
             <div className="prf-stat-divider"></div>
             <div className="prf-stat">
-              <div className="prf-stat-num">12</div>
-              <div className="prf-stat-label">Projetos Ativos</div>
+              <div className="prf-stat-num">
+                {wallet?.positions ? Object.keys(wallet.positions).length : 0}
+              </div>
+              <div className="prf-stat-label">Ativos Diferentes</div>
             </div>
           </div>
         </div>
@@ -368,25 +398,32 @@ export default function Profile() {
             <div className="prf-card prf-projects-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 className="prf-section-title">Portfólio</h3>
-                <button className="prf-view-all-btn">Ver Todos</button>
+                <button className="prf-view-all-btn" onClick={() => setActiveNav('Carteira')}>Ver Carteira</button>
               </div>
               <div className="prf-projects-list">
-                {PROJECTS.map(proj => (
-                  <div key={proj.id} className="prf-project-row">
-                    <div className="prf-project-accent" style={{ background: proj.color }}></div>
-                    <div className="prf-project-info">
-                      <span className="prf-project-name">{proj.title}</span>
-                      <span className="prf-project-meta">{proj.tag} • <strong>{proj.roi}</strong></span>
-                    </div>
-                    <div className="prf-project-right">
-                      <div className="prf-mini-bar-wrap">
-                        <div className="prf-mini-bar-fill" style={{ width: `${proj.progress}%` }} />
+                {wallet && wallet.positions && Object.keys(wallet.positions).length > 0 ? (
+                  Object.entries(wallet.positions).map(([sym, data]) => {
+                    const totalValue = data.qty * data.avgPrice;
+                    return (
+                      <div key={sym} className="prf-project-row">
+                        <div className="prf-project-accent" style={{ background: '#cdb89f' }}></div>
+                        <div className="prf-project-info">
+                          <span className="prf-project-name">{sym}</span>
+                          <span className="prf-project-meta">Preço Médio: <strong>R$ {data.avgPrice.toFixed(2)}</strong></span>
+                        </div>
+                        <div className="prf-project-right">
+                          <div style={{ textAlign: 'right', marginRight: '15px' }}>
+                            <div style={{ color: '#F4EDE6', fontWeight: 'bold' }}>{data.qty} cotas</div>
+                            <div style={{ color: 'rgba(244,237,230,0.5)', fontSize: '11px' }}>R$ {totalValue.toFixed(2)}</div>
+                          </div>
+                          <button className="prf-project-btn" onClick={() => setActiveNav('Carteira')}>Negociar</button>
+                        </div>
                       </div>
-                      <span className="prf-mini-bar-pct">{proj.progress}%</span>
-                      <button className="prf-project-btn">Detalhes</button>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  })
+                ) : (
+                  <p style={{ color: 'rgba(244,237,230,0.5)', fontSize: '13px' }}>Você ainda não comprou nenhuma ação.</p>
+                )}
               </div>
             </div>
           </div>
@@ -451,6 +488,14 @@ export default function Profile() {
             </div>
           </div>
         </div>
+        </>
+        ) : activeNav === 'Carteira' ? (
+          <WalletTab />
+        ) : (
+          <div className="prf-card" style={{ textAlign: 'center', padding: '100px 0' }}>
+            <h2 className="prf-welcome-h1" style={{ color: 'rgba(244,237,230,0.5)' }}>Em breve</h2>
+          </div>
+        )}
       </main>
     </div>
   )
