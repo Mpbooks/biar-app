@@ -22,6 +22,7 @@ if (!JWT_SECRET || JWT_SECRET.length < 16) throw new Error('JWT_SECRET muito cur
 // ── MongoDB (conexão persistida entre chamadas serverless) ─
 let cachedClient = null
 let usersCollection = null
+let walletsCollection = null
 
 async function getDb () {
   if (cachedClient) return usersCollection
@@ -31,10 +32,24 @@ async function getDb () {
   usersCollection = db.collection('users')
   await usersCollection.createIndex({ email: 1 }, { unique: true })
   await usersCollection.createIndex({ username: 1 }, { unique: true })
+  walletsCollection = db.collection('wallets')
+  await walletsCollection.createIndex({ userId: 1 }, { unique: true })
   return usersCollection
 }
 
 // ── Helpers ────────────────────────────────────────────────
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  if (!token) return res.status(401).json({ error: 'unauthorized' })
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'forbidden' })
+    req.user = user
+    next()
+  })
+}
+
 const normalizeEmail    = e => String(e || '').trim().toLowerCase()
 const normalizeUsername = u => String(u || '').trim()
 
@@ -272,6 +287,126 @@ app.post('/api/auth/resend', async (req, res) => {
     await sendVerificationEmail(user.email, verificationCode)
 
     return res.json({ status: 'sent' })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+// ── Wallet ─────────────────────────────────────────────────
+app.get('/api/wallet', authenticateToken, async (req, res) => {
+  try {
+    await getDb()
+    const userId = req.user.sub
+    let wallet = await walletsCollection.findOne({ userId })
+    
+    if (!wallet) {
+      const newWallet = {
+        userId,
+        balance: 10000.0,
+        positions: {},
+        history: []
+      }
+      await walletsCollection.insertOne(newWallet)
+      wallet = newWallet
+    }
+    
+    return res.json(wallet)
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+app.post('/api/wallet/trade', authenticateToken, async (req, res) => {
+  try {
+    await getDb()
+    const userId = req.user.sub
+    const { symbol, qty, price, side } = req.body
+    
+    if (!symbol || !qty || !price || !side) {
+      return res.status(400).json({ error: 'missing_fields' })
+    }
+    if (qty <= 0 || price <= 0) {
+      return res.status(400).json({ error: 'invalid_values' })
+    }
+    
+    const wallet = await walletsCollection.findOne({ userId })
+    if (!wallet) {
+      return res.status(404).json({ error: 'wallet_not_found' })
+    }
+    
+    const total = qty * price
+    const uppercaseSymbol = symbol.toUpperCase()
+    const now = new Date()
+    const dateString = now.toLocaleString('pt-BR')
+    
+    const historyEntry = {
+      id: Date.now(),
+      side: side.toUpperCase(),
+      symbol: uppercaseSymbol,
+      qty,
+      price,
+      total,
+      date: dateString
+    }
+    
+    if (side.toUpperCase() === 'BUY') {
+      if (wallet.balance < total) return res.status(400).json({ error: 'insufficient_funds' })
+      
+      const newBalance = wallet.balance - total
+      const positions = wallet.positions || {}
+      
+      let newQty = qty
+      let newAvgPrice = price
+      
+      if (positions[uppercaseSymbol]) {
+        const oldQty = positions[uppercaseSymbol].qty
+        const oldAvgPrice = positions[uppercaseSymbol].avgPrice
+        newQty = oldQty + qty
+        newAvgPrice = ((oldQty * oldAvgPrice) + total) / newQty
+      }
+      
+      const updateData = {
+        $set: { 
+          balance: newBalance,
+          [`positions.${uppercaseSymbol}`]: { qty: newQty, avgPrice: newAvgPrice }
+        },
+        $push: { history: historyEntry }
+      }
+      
+      await walletsCollection.updateOne({ userId }, updateData)
+      return res.json({ success: true })
+      
+    } else if (side.toUpperCase() === 'SELL') {
+      const positions = wallet.positions || {}
+      if (!positions[uppercaseSymbol] || positions[uppercaseSymbol].qty < qty) {
+        return res.status(400).json({ error: 'insufficient_assets' })
+      }
+      
+      const newBalance = wallet.balance + total
+      const newQty = positions[uppercaseSymbol].qty - qty
+      
+      const updateData = {
+        $set: { balance: newBalance },
+        $push: { history: historyEntry }
+      }
+      
+      if (newQty === 0) {
+        updateData.$unset = { [`positions.${uppercaseSymbol}`]: "" }
+      } else {
+        updateData.$set[`positions.${uppercaseSymbol}`] = { 
+          qty: newQty, 
+          avgPrice: positions[uppercaseSymbol].avgPrice 
+        }
+      }
+      
+      await walletsCollection.updateOne({ userId }, updateData)
+      return res.json({ success: true })
+      
+    } else {
+      return res.status(400).json({ error: 'invalid_side' })
+    }
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })
