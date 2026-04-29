@@ -3,7 +3,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { MongoClient, ObjectId } from 'mongodb'
+import { MongoClient } from 'mongodb'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import session from 'express-session'
@@ -30,26 +30,19 @@ async function getDb () {
   await cachedClient.connect()
   const db = cachedClient.db()
   usersCollection = db.collection('users')
+  walletsCollection = db.collection('wallets')
   await usersCollection.createIndex({ email: 1 }, { unique: true })
   await usersCollection.createIndex({ username: 1 }, { unique: true })
-  walletsCollection = db.collection('wallets')
   await walletsCollection.createIndex({ userId: 1 }, { unique: true })
   return usersCollection
 }
 
-// ── Helpers ────────────────────────────────────────────────
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1]
-  if (!token) return res.status(401).json({ error: 'unauthorized' })
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'forbidden' })
-    req.user = user
-    next()
-  })
+async function getWallets () {
+  if (!walletsCollection) await getDb()
+  return walletsCollection
 }
 
+// ── Helpers ────────────────────────────────────────────────
 const normalizeEmail    = e => String(e || '').trim().toLowerCase()
 const normalizeUsername = u => String(u || '').trim()
 
@@ -93,7 +86,7 @@ app.use(cors({
   origin: FRONTEND_URL || true,
   credentials: true,
 }))
-app.use(express.json({ limit: '10mb' }))
+app.use(express.json())
 app.use(session({
   secret: JWT_SECRET,
   resave: false,
@@ -127,7 +120,7 @@ passport.use(new GoogleStrategy({
         { sub: user._id.toString(), username: user.username, email: user.email },
         JWT_SECRET, { expiresIn: '7d' }
       )
-      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt, avatar: user.avatar } })
+      return done(null, { existing: true, token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt } })
     }
     return done(null, { existing: false, email, googleId, name })
   } catch (e) { return done(e) }
@@ -166,7 +159,7 @@ app.post('/api/auth/google/finish', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10)
     const { insertedId } = await col.insertOne({ username, email, googleId, passwordHash, createdAt: new Date(), isVerified: true })
     const token = jwt.sign({ sub: insertedId.toString(), username, email }, JWT_SECRET, { expiresIn: '7d' })
-    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date(), avatar: null } })
+    return res.status(201).json({ token, user: { id: insertedId.toString(), username, email, createdAt: new Date() } })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
     console.error(e)
@@ -196,7 +189,11 @@ app.post('/api/auth/register', async (req, res) => {
     
     await sendVerificationEmail(email, verificationCode)
 
-    return res.status(201).json({ status: 'pending_verification', email })
+    return res.status(201).json({
+      status: 'pending_verification',
+      email,
+      ...(!process.env.SMTP_USER ? { devCode: verificationCode } : {}),
+    })
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'duplicate_user' })
     console.error(e)
@@ -231,7 +228,11 @@ app.post('/api/auth/login', async (req, res) => {
     
     await sendVerificationEmail(user.email, verificationCode)
 
-    return res.json({ status: 'pending_verification', email: user.email })
+    return res.json({
+      status: 'pending_verification',
+      email: user.email,
+      ...(!process.env.SMTP_USER ? { devCode: verificationCode } : {}),
+    })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })
@@ -263,7 +264,7 @@ app.post('/api/auth/verify', async (req, res) => {
       { sub: user._id.toString(), username: user.username, email: user.email },
       JWT_SECRET, { expiresIn: '7d' }
     )
-    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date(), avatar: user.avatar } })
+    return res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, createdAt: user.createdAt || new Date() } })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: 'server_error' })
@@ -293,147 +294,6 @@ app.post('/api/auth/resend', async (req, res) => {
   }
 })
 
-// ── User Avatar ────────────────────────────────────────────
-app.post('/api/user/avatar', authenticateToken, async (req, res) => {
-  try {
-    const col = await getDb()
-    const userId = req.user.sub
-    const { avatar } = req.body
-    
-    if (!avatar) return res.status(400).json({ error: 'missing_avatar' })
-
-    await col.updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { avatar } }
-    )
-
-    res.json({ success: true, avatar })
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'server_error' })
-  }
-})
-
-// ── Wallet ─────────────────────────────────────────────────
-app.get('/api/wallet', authenticateToken, async (req, res) => {
-  try {
-    await getDb()
-    const userId = req.user.sub
-    let wallet = await walletsCollection.findOne({ userId })
-    
-    if (!wallet) {
-      const newWallet = {
-        userId,
-        balance: 10000.0,
-        positions: {},
-        history: []
-      }
-      await walletsCollection.insertOne(newWallet)
-      wallet = newWallet
-    }
-    
-    return res.json(wallet)
-  } catch (e) {
-    console.error(e)
-    return res.status(500).json({ error: 'server_error' })
-  }
-})
-
-app.post('/api/wallet/trade', authenticateToken, async (req, res) => {
-  try {
-    await getDb()
-    const userId = req.user.sub
-    const { symbol, qty, price, side } = req.body
-    
-    if (!symbol || !qty || !price || !side) {
-      return res.status(400).json({ error: 'missing_fields' })
-    }
-    if (qty <= 0 || price <= 0) {
-      return res.status(400).json({ error: 'invalid_values' })
-    }
-    
-    const wallet = await walletsCollection.findOne({ userId })
-    if (!wallet) {
-      return res.status(404).json({ error: 'wallet_not_found' })
-    }
-    
-    const total = qty * price
-    const uppercaseSymbol = symbol.toUpperCase()
-    const now = new Date()
-    const dateString = now.toLocaleString('pt-BR')
-    
-    const historyEntry = {
-      id: Date.now(),
-      side: side.toUpperCase(),
-      symbol: uppercaseSymbol,
-      qty,
-      price,
-      total,
-      date: dateString
-    }
-    
-    if (side.toUpperCase() === 'BUY') {
-      if (wallet.balance < total) return res.status(400).json({ error: 'insufficient_funds' })
-      
-      const newBalance = wallet.balance - total
-      const positions = wallet.positions || {}
-      
-      let newQty = qty
-      let newAvgPrice = price
-      
-      if (positions[uppercaseSymbol]) {
-        const oldQty = positions[uppercaseSymbol].qty
-        const oldAvgPrice = positions[uppercaseSymbol].avgPrice
-        newQty = oldQty + qty
-        newAvgPrice = ((oldQty * oldAvgPrice) + total) / newQty
-      }
-      
-      const updateData = {
-        $set: { 
-          balance: newBalance,
-          [`positions.${uppercaseSymbol}`]: { qty: newQty, avgPrice: newAvgPrice }
-        },
-        $push: { history: historyEntry }
-      }
-      
-      await walletsCollection.updateOne({ userId }, updateData)
-      return res.json({ success: true })
-      
-    } else if (side.toUpperCase() === 'SELL') {
-      const positions = wallet.positions || {}
-      if (!positions[uppercaseSymbol] || positions[uppercaseSymbol].qty < qty) {
-        return res.status(400).json({ error: 'insufficient_assets' })
-      }
-      
-      const newBalance = wallet.balance + total
-      const newQty = positions[uppercaseSymbol].qty - qty
-      
-      const updateData = {
-        $set: { balance: newBalance },
-        $push: { history: historyEntry }
-      }
-      
-      if (newQty === 0) {
-        updateData.$unset = { [`positions.${uppercaseSymbol}`]: "" }
-      } else {
-        updateData.$set[`positions.${uppercaseSymbol}`] = { 
-          qty: newQty, 
-          avgPrice: positions[uppercaseSymbol].avgPrice 
-        }
-      }
-      
-      await walletsCollection.updateOne({ userId }, updateData)
-      return res.json({ success: true })
-      
-    } else {
-      return res.status(400).json({ error: 'invalid_side' })
-    }
-  } catch (e) {
-    console.error(e)
-    return res.status(500).json({ error: 'server_error' })
-  }
-})
-
 // ── Proxy CoinGecko ────────────────────────────────────────
 app.get('/api/price/bitcoin/:currency', async (req, res) => {
   try {
@@ -450,6 +310,156 @@ app.get('/api/price/bitcoin/:currency', async (req, res) => {
 
 // ── Health check ───────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }))
+
+// ── JWT middleware ─────────────────────────────────────────
+function requireAuth (req, res, next) {
+  const auth = req.headers.authorization || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return res.status(401).json({ error: 'unauthorized' })
+  try {
+    req.jwtUser = jwt.verify(token, JWT_SECRET)
+    next()
+  } catch {
+    return res.status(401).json({ error: 'invalid_token' })
+  }
+}
+
+const INITIAL_BALANCE = 10000
+
+// ── Proxy brapi.dev ────────────────────────────────────────
+// Plano free = 1 ativo por requisição → chamadas individuais em paralelo
+app.get('/api/stocks/quotes', async (req, res) => {
+  const allSymbols = String(req.query.symbols || 'PETR4')
+    .replace(/[^A-Z0-9,]/gi, '')
+    .toUpperCase()
+    .split(',')
+    .filter(Boolean)
+    .slice(0, 30)
+
+  const token = process.env.BRAPI_TOKEN
+  const symbols = token ? allSymbols : allSymbols.slice(0, 1)
+
+  try {
+    const settled = await Promise.allSettled(
+      symbols.map(async (sym) => {
+        const qs = token ? `?fundamental=false&token=${token}` : '?fundamental=false'
+        const r = await fetch(
+          `https://brapi.dev/api/quote/${sym}${qs}`,
+          { headers: { 'User-Agent': 'biar-app/1.0' } }
+        )
+        if (!r.ok) throw new Error(`${sym}: ${r.status}`)
+        const d = await r.json()
+        return d.results?.[0] ?? null
+      })
+    )
+
+    const results = settled
+      .filter(s => s.status === 'fulfilled' && s.value)
+      .map(s => s.value)
+
+    if (results.length === 0) throw new Error('sem resultados')
+    return res.json({ results })
+  } catch (e) {
+    console.error('brapi proxy error:', e.message)
+    return res.status(502).json({ error: 'quotes_unavailable' })
+  }
+})
+
+// ── GET /api/wallet ────────────────────────────────────────
+app.get('/api/wallet', requireAuth, async (req, res) => {
+  try {
+    const col = await getWallets()
+    let wallet = await col.findOne({ userId: req.jwtUser.sub })
+    if (!wallet) {
+      wallet = { userId: req.jwtUser.sub, balance: INITIAL_BALANCE, positions: {}, history: [] }
+      await col.insertOne(wallet)
+    }
+    const { _id, userId, ...safe } = wallet
+    return res.json(safe)
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+// ── POST /api/wallet/order ─────────────────────────────────
+app.post('/api/wallet/order', requireAuth, async (req, res) => {
+  try {
+    const { side, symbol, qty, price } = req.body
+    if (!['buy', 'sell'].includes(side) || !symbol || !qty || !price) {
+      return res.status(400).json({ error: 'missing_fields' })
+    }
+    const q = Math.floor(Number(qty))
+    const p = Number(price)
+    if (q <= 0 || !isFinite(p) || p <= 0) {
+      return res.status(400).json({ error: 'invalid_values' })
+    }
+
+    const col = await getWallets()
+    let wallet = await col.findOne({ userId: req.jwtUser.sub })
+    if (!wallet) {
+      wallet = { userId: req.jwtUser.sub, balance: INITIAL_BALANCE, positions: {}, history: [] }
+    }
+
+    const total = p * q
+    const positions = { ...wallet.positions }
+    let balance = wallet.balance
+
+    if (side === 'buy') {
+      if (balance < total) return res.status(400).json({ error: 'insufficient_balance' })
+      const pos = positions[symbol] || { qty: 0, avgPrice: 0 }
+      const newQty = pos.qty + q
+      positions[symbol] = { qty: newQty, avgPrice: (pos.avgPrice * pos.qty + total) / newQty }
+      balance -= total
+    } else {
+      const pos = positions[symbol]
+      if (!pos || pos.qty < q) return res.status(400).json({ error: 'insufficient_position' })
+      const newQty = pos.qty - q
+      if (newQty === 0) delete positions[symbol]
+      else positions[symbol] = { ...pos, qty: newQty }
+      balance += total
+    }
+
+    const entry = {
+      id: Date.now(),
+      side: side.toUpperCase(),
+      symbol,
+      qty: q,
+      price: p,
+      total,
+      date: new Date().toLocaleString('pt-BR'),
+    }
+
+    const newHistory = [entry, ...(wallet.history || [])].slice(0, 100)
+
+    await col.updateOne(
+      { userId: req.jwtUser.sub },
+      { $set: { balance, positions, history: newHistory } },
+      { upsert: true }
+    )
+
+    return res.json({ balance, positions, history: newHistory })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
+
+// ── POST /api/wallet/reset ─────────────────────────────────
+app.post('/api/wallet/reset', requireAuth, async (req, res) => {
+  try {
+    const col = await getWallets()
+    await col.updateOne(
+      { userId: req.jwtUser.sub },
+      { $set: { balance: INITIAL_BALANCE, positions: {}, history: [] } },
+      { upsert: true }
+    )
+    return res.json({ balance: INITIAL_BALANCE, positions: {}, history: [] })
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: 'server_error' })
+  }
+})
 
 // ── Export para Vercel Serverless ──────────────────────────
 export default app
