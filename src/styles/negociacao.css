@@ -1,0 +1,754 @@
+/* src/styles/negociacao.css */
+
+.neg-root {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 10px;
+}
+
+/* ── Top Stats Bar ─────────────────────────── */
+.neg-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(244, 237, 230, 0.04);
+  border: 1px solid rgba(244, 237, 230, 0.08);
+  border-radius: 12px;
+  padding: 18px 28px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.neg-topbar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.neg-topbar-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 237, 230, 0.4);
+}
+
+.neg-topbar-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #F4EDE6;
+}
+
+.neg-topbar-sub {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.neg-topbar-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(244, 237, 230, 0.1);
+  flex-shrink: 0;
+}
+
+.neg-pulse-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.neg-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: neg-blink 1.5s infinite;
+}
+
+.neg-pulse--live { background: #4ade80; }
+.neg-pulse--loading { background: #facc15; animation: neg-spin 1s linear infinite; border-radius: 0; }
+.neg-pulse--error { background: #f87171; animation: none; }
+
+.neg-pulse-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(244, 237, 230, 0.4);
+}
+
+@keyframes neg-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes neg-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Toast Flash ─────────────────────────── */
+.neg-flash {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 999;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  animation: neg-slide-in 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.neg-flash--ok { background: rgba(74, 222, 128, 0.2); border: 1px solid rgba(74, 222, 128, 0.4); color: #4ade80; }
+.neg-flash--err { background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.4); color: #f87171; }
+
+@keyframes neg-slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Main Grid ─────────────────────────────── */
+.neg-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 260px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Watchlist ─────────────────────────────── */
+.neg-watchlist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+}
+
+.neg-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.neg-update-badge {
+  font-size: 10px;
+  color: rgba(244, 237, 230, 0.3);
+  letter-spacing: 0.05em;
+}
+
+.neg-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.neg-skeleton-row {
+  height: 56px;
+  background: rgba(244, 237, 230, 0.05);
+  border-radius: 8px;
+  animation: neg-shimmer 1.5s infinite;
+}
+
+@keyframes neg-shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.neg-watch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.neg-watch-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.neg-watch-item:hover {
+  background: rgba(244, 237, 230, 0.05);
+  border-color: rgba(244, 237, 230, 0.08);
+}
+
+.neg-watch-item--active {
+  background: rgba(205, 184, 159, 0.12);
+  border-color: rgba(205, 184, 159, 0.25);
+}
+
+@keyframes neg-flash-up-anim {
+  0% { background: rgba(74, 222, 128, 0.15); }
+  100% { background: transparent; }
+}
+
+@keyframes neg-flash-down-anim {
+  0% { background: rgba(248, 113, 113, 0.15); }
+  100% { background: transparent; }
+}
+
+.neg-flash-up { animation: neg-flash-up-anim 0.8s ease; }
+.neg-flash-down { animation: neg-flash-down-anim 0.8s ease; }
+
+.neg-watch-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 70px;
+}
+
+.neg-watch-symbol {
+  font-size: 13px;
+  font-weight: 700;
+  color: #F4EDE6;
+  letter-spacing: 0.03em;
+}
+
+.neg-watch-name {
+  font-size: 10px;
+  color: rgba(244, 237, 230, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+}
+
+.neg-watch-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: 1;
+}
+
+.neg-watch-price {
+  font-size: 12px;
+  font-weight: 600;
+  color: #F4EDE6;
+}
+
+.neg-watch-pct {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.neg-watch-spark {
+  flex-shrink: 0;
+}
+
+/* ── Center Column ─────────────────────────── */
+.neg-center {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Detail Card ────────────────────────────── */
+.neg-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.neg-detail-loading {
+  color: rgba(244, 237, 230, 0.4);
+  font-size: 13px;
+  text-align: center;
+  padding: 40px;
+}
+
+.neg-detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.neg-detail-symbol {
+  font-size: 28px;
+  font-weight: 800;
+  color: #F4EDE6;
+  letter-spacing: 0.04em;
+}
+
+.neg-detail-name {
+  font-size: 12px;
+  color: rgba(244, 237, 230, 0.45);
+  margin-top: 2px;
+}
+
+.neg-detail-prices {
+  text-align: right;
+}
+
+.neg-detail-price {
+  font-size: 26px;
+  font-weight: 700;
+  color: #F4EDE6;
+}
+
+.neg-detail-change {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.neg-sparkline-big {
+  width: 100%;
+  overflow: hidden;
+}
+
+.neg-sparkline-big svg {
+  width: 100%;
+  height: 80px;
+}
+
+.neg-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.neg-detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(244, 237, 230, 0.04);
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.neg-detail-stat span {
+  font-size: 10px;
+  color: rgba(244, 237, 230, 0.35);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.neg-detail-stat strong {
+  font-size: 14px;
+  color: #F4EDE6;
+  font-weight: 600;
+}
+
+/* ── My Position ─────────────────────────────── */
+.neg-my-position {
+  border-top: 1px solid rgba(244, 237, 230, 0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.neg-pos-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.neg-pos-qty {
+  font-size: 16px;
+  font-weight: 700;
+  color: #F4EDE6;
+}
+
+.neg-pos-avg {
+  font-size: 12px;
+  color: rgba(244, 237, 230, 0.45);
+  margin-top: 2px;
+}
+
+.neg-pos-pl-wrap {
+  text-align: right;
+}
+
+.neg-pos-pl {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.neg-pos-total {
+  font-size: 12px;
+  color: rgba(244, 237, 230, 0.45);
+  margin-top: 2px;
+}
+
+/* ── Bottom Card (tabs) ──────────────────────── */
+.neg-bottom-card {
+  overflow: hidden;
+}
+
+.neg-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(244, 237, 230, 0.08);
+  padding-bottom: 12px;
+}
+
+.neg-tab {
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(244, 237, 230, 0.45);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+
+.neg-tab:hover {
+  color: #F4EDE6;
+  background: rgba(244, 237, 230, 0.06);
+}
+
+.neg-tab--active {
+  color: #cdb89f;
+  background: rgba(205, 184, 159, 0.1);
+}
+
+.neg-table-wrap {
+  overflow-x: auto;
+}
+
+.neg-empty {
+  color: rgba(244, 237, 230, 0.3);
+  font-size: 13px;
+  text-align: center;
+  padding: 30px 0;
+}
+
+.neg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.neg-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(244, 237, 230, 0.35);
+  border-bottom: 1px solid rgba(244, 237, 230, 0.08);
+}
+
+.neg-table td {
+  padding: 11px 12px;
+  color: #F4EDE6;
+  border-bottom: 1px solid rgba(244, 237, 230, 0.05);
+  vertical-align: middle;
+}
+
+.neg-table-row-click {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.neg-table-row-click:hover td {
+  background: rgba(244, 237, 230, 0.03);
+}
+
+.neg-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.neg-badge--buy { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.neg-badge--sell { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+/* ── Order Panel ────────────────────────────── */
+.neg-order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 100px;
+}
+
+.neg-order-price {
+  padding: 14px;
+  background: rgba(244, 237, 230, 0.04);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.neg-order-cur {
+  font-size: 24px;
+  font-weight: 800;
+  color: #F4EDE6;
+}
+
+.neg-order-pct {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.neg-order-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.neg-order-label {
+  font-size: 11px;
+  color: rgba(244, 237, 230, 0.45);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.neg-order-input {
+  background: rgba(244, 237, 230, 0.06);
+  border: 1px solid rgba(244, 237, 230, 0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #F4EDE6;
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.neg-order-input:focus {
+  border-color: rgba(205, 184, 159, 0.4);
+}
+
+.neg-order-input::-webkit-inner-spin-button,
+.neg-order-input::-webkit-outer-spin-button {
+  opacity: 0.3;
+}
+
+.neg-order-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(205, 184, 159, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(205, 184, 159, 0.15);
+}
+
+.neg-order-total span {
+  font-size: 11px;
+  color: rgba(244, 237, 230, 0.4);
+}
+
+.neg-order-total strong {
+  font-size: 14px;
+  color: #cdb89f;
+}
+
+.neg-order-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.neg-preset-btn {
+  flex: 1;
+  padding: 7px 0;
+  background: rgba(244, 237, 230, 0.05);
+  border: 1px solid rgba(244, 237, 230, 0.1);
+  border-radius: 6px;
+  color: rgba(244, 237, 230, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.neg-preset-btn:hover {
+  background: rgba(244, 237, 230, 0.1);
+  color: #F4EDE6;
+}
+
+.neg-order-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.neg-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.neg-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.neg-btn--buy {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+
+.neg-btn--buy:not(:disabled):hover {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+
+.neg-btn--sell {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.neg-btn--sell:not(:disabled):hover {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+.neg-order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(244, 237, 230, 0.08);
+}
+
+.neg-order-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.neg-order-info-row span {
+  font-size: 12px;
+  color: rgba(244, 237, 230, 0.4);
+}
+
+.neg-order-info-row strong {
+  font-size: 13px;
+  color: #F4EDE6;
+}
+
+.neg-reset-btn {
+  background: none;
+  border: 1px solid rgba(244, 237, 230, 0.1);
+  border-radius: 8px;
+  color: rgba(244, 237, 230, 0.3);
+  font-size: 11px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.neg-reset-btn:hover {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}
+
+/* ── Unauthenticated ────────────────────────── */
+.neg-unauthenticated {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.neg-unauth-icon {
+  font-size: 48px;
+}
+
+.neg-unauthenticated h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #F4EDE6;
+}
+
+.neg-unauthenticated p {
+  font-size: 14px;
+  color: rgba(244, 237, 230, 0.45);
+}
+
+.neg-unauth-btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 12px 32px;
+  background: #F4EDE6;
+  color: #060504;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.neg-unauth-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Color Utils ────────────────────────────── */
+.neg-pos { color: #4ade80; }
+.neg-neg { color: #f87171; }
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 1100px) {
+  .neg-grid {
+    grid-template-columns: 240px 1fr 240px;
+  }
+}
+
+@media (max-width: 860px) {
+  .neg-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .neg-order-card {
+    position: static;
+  }
+
+  .neg-topbar {
+    gap: 16px;
+  }
+
+  .neg-topbar-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .neg-detail-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .neg-detail-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .neg-detail-prices {
+    text-align: left;
+  }
+}
